@@ -62,10 +62,10 @@ const ChartContainer = styled.div`
 `;
 export default function DashBoard() {
   const data = [
-    { month: "January", sales: 10 },
+    { month: "January", sales: 80 },
     { month: "February", sales: 20 },
-    { month: "March", sales: 30 },
-    { month: "April", sales: 40 },
+    { month: "March", sales: 90 },
+    { month: "April", sales: 10 },
     { month: "May", sales: 60 },
     { month: "June", sales: 50 },
     { month: "July", sales: 70 },
@@ -166,7 +166,7 @@ export default function DashBoard() {
             <CartesianGrid strokeDasharray="3 3" />
             <Tooltip />
             <Area
-              type="monotone"
+              type="linear"
               dataKey="sales"
               stroke="#FF0000"
               fillOpacity={1}
