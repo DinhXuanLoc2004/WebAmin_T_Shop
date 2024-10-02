@@ -15,6 +15,7 @@ import ManageUser from "../Screen/ManageUser";
 import Orders from "../Screen/Orders";
 import Setting from "../Screen/Setting";
 import ManageCategory from "../Screen/ManageCategory";
+import EditProduct from "../Screen/EditProduct";
 
 // Hàm component cho trang Brand
 const Brand = () => <h2 style={styles.heading}>Brand</h2>;
@@ -77,6 +78,7 @@ export default function Navigation() {
           <Route path="/brand" element={<Brand />} />
           <Route path="/user" element={<ManageUser />} />
           <Route path="/setting" element={<Setting />} />
+          <Route path="/edit" element={<EditProduct />} />
         </Routes>
       </div>
     </div>

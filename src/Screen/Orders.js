@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEdit, faTrash } from "@fortawesome/free-solid-svg-icons";
+import DeleteDialog from "../component/DeleteDialog";
+
 export default function Orders() {
   const order = [
     {
@@ -35,6 +37,14 @@ export default function Orders() {
   const filteredItems = order.filter((order) =>
     order.fullName.toLowerCase().includes(searchItem.toLowerCase())
   );
+  const [showAlert, setShowAlert] = useState(false);
+
+  const handleOpen = () => setShowAlert(true);
+  const handleClose = () => setShowAlert(false);
+  const handleConfirm = () => {
+    console.log("Xóa dữ liệu");
+    handleClose();
+  };
   return (
     <div style={styles.container}>
       <input
@@ -100,6 +110,7 @@ export default function Orders() {
               </td>
               <td style={{ ...styles.thTd, paddingLeft: 10 }}>
                 <button
+                  onClick={handleOpen}
                   style={styles.deletekBtn}
                   onMouseOver={(e) =>
                     (e.currentTarget.style.backgroundColor =
@@ -112,6 +123,11 @@ export default function Orders() {
                 >
                   <FontAwesomeIcon icon={faTrash} /> Delete
                 </button>
+                <DeleteDialog
+                  open={showAlert}
+                  onClose={handleClose}
+                  onConfirm={handleConfirm}
+                />
               </td>
             </tr>
           ))}
@@ -183,8 +199,8 @@ const styles = {
     padding: "5px 10px",
     borderRadius: "5px",
     cursor: "pointer",
-    width:70,
-    height:40
+    width: 70,
+    height: 40,
   },
   editBtnHover: {
     backgroundColor: "#003CFF",
@@ -196,8 +212,8 @@ const styles = {
     padding: "5px 10px",
     borderRadius: "5px",
     cursor: "pointer",
-    width:80,
-    height:40,
+    width: 80,
+    height: 40,
   },
   deleteBtnHover: {
     backgroundColor: "#c82333",
