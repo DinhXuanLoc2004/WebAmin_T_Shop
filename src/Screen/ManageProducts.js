@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faTrash,
@@ -10,39 +10,31 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import Modal from "react-bootstrap/Modal";
 import "../Css/Dialog.css";
+import axios from "axios";
 
 export default function ManageProducts() {
-  const [products, setProducts] = useState([
-    {
-      id: "709 - 230",
-      images: [
-        "https://tse1.mm.bing.net/th?id=OIP.m-i6q-NXULLqpFFCZ8Pu9wHaEK&pid=Api&P=0&h=180",
-        "https://tse4.mm.bing.net/th?id=OIP.2cVDwkg3RO8UZKUEWDKn8wHaFO&pid=Api&P=0&h=180",
-        "https://tse1.mm.bing.net/th?id=OIP.94mqu1rmJ4ySGjzpHJAL8gHaEo&pid=Api&P=0&h=180",
-      ],
-      fullName: "Longsleeve Violeta",
-      brand: "Uniqlo",
-      category: "Active",
-      rate: 4.5,
-      reviews: 24,
-      quantity: 10,
-      price: 71.56,
-      salePrice: 67.56,
-      sold: 123,
-      colors: ["#000000", "#9966FF", "#FF99FF", "#00FF38"],
-      sizes: ["S", "M", "L", "XL"],
-      description:
-        "A comfortable and stylish longsleeve perfect for all seasons. Made with premium cotton for an excellent fit. A comfortable and stylish longsleeve perfect for all seasons. Made with premium cotton for an excellent fit.",
-    },
-    
-  ]);
+  const [products,setProducts]= useState([])
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const result = await axios.post(
+          "http://192.168.0.114:5000/v1/api/product/get_all_products"
+        );
+        console.log(result);
+        setProducts(result.data.metadata.products);
+      } catch (error) {
+        console.error("Lỗi khi gọi API:", error);
+      }
+    };
+    fetchProducts();
+  }, []);
 
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const handleProductClick = (product) => {
-    setSelectedProduct(product);
+  const handleProductClick = (products) => {
+    setSelectedProduct(products);
     setIsDialogOpen(true);
   };
 
@@ -60,13 +52,13 @@ export default function ManageProducts() {
 
   const handlePrevClick = () => {
     setCurrentIndex((prevIndex) =>
-      prevIndex === 0 ? selectedProduct.images.length - 1 : prevIndex - 1
+      prevIndex === 0 ? selectedProduct.thumb.length - 1 : prevIndex - 1
     );
   };
 
   const handleNextClick = () => {
     setCurrentIndex((prevIndex) =>
-      prevIndex === selectedProduct.images.length - 1 ? 0 : prevIndex + 1
+      prevIndex === selectedProduct.thumb.length - 1 ? 0 : prevIndex + 1
     );
   };
 
@@ -99,24 +91,24 @@ export default function ManageProducts() {
               style={{ cursor: "pointer" }}
               onClick={() => handleProductClick(product)}
             >
-              <td style={styles.thTdTable}>{product.id}</td>
+              <td style={styles.thTdTable}>{product._id}</td>
               <td style={styles.thTd}>
-                <img src={product.images[0]} alt="Product" style={styles.img} />
+              <img src={product.thumb} alt="Product" style={styles.img} />
               </td>
-              <td style={styles.thTdTable}>{product.fullName}</td>
-              <td style={styles.thTdTable}>{product.brand}</td>
-              <td style={styles.thTdTable}>{product.category}</td>
+              <td style={styles.thTdTable}>{product.name_product}</td>
+              <td style={styles.thTdTable}>{product.name_brand}</td>
+              <td style={styles.thTdTable}>{product.name_category}</td>
               <td style={styles.thTdTable}>
                 <span>{product.rate}</span>
                 <span style={{ color: "yellow", fontSize: 24, marginLeft: 10 }}>
                   ★
                 </span>
                 <span style={{ color: "gray", marginLeft: 10 }}>
-                  ({product.reviews})
+                  ({product.averageRating})
                 </span>
               </td>
-              <td style={styles.thTdTable}>{product.quantity}</td>
-              <td style={styles.thTdTable}>${product.price}</td>
+              <td style={styles.thTdTable}>{product.inventory_quantity}</td>
+              <td style={styles.thTdTable}>${product.price_min}</td>
               <td style={styles.thTdTable}>{product.sold} items</td>
               <td style={styles.thTd}>
                 <button style={styles.editBtn}>
@@ -152,7 +144,7 @@ export default function ManageProducts() {
               {/* Main Image */}
               <div>
                 <img
-                  src={selectedProduct.images[currentIndex]}
+                  src={selectedProduct.thumb[currentIndex]}
                   alt="Main"
                   style={styles.mainImage}
                 />
@@ -167,7 +159,7 @@ export default function ManageProducts() {
 
                 {/* Thumbnails */}
                 <div style={styles.thumbnailContainer}>
-                  {selectedProduct.images.map((image, index) => (
+                  {selectedProduct.thumb.map((image, index) => (
                     <div
                       key={index}
                       onClick={() => handleThumbnailClick(index)}
