@@ -14,7 +14,7 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false); // Quản lý trạng thái đăng nhập
 
   const handleLogin = () => {
-    setIsLoggedIn(true); git
+    setIsLoggedIn(true);
   };
 
   return (

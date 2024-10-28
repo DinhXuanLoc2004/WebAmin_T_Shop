@@ -132,6 +132,11 @@ export default function ManageProducts() {
                 >
                   <FontAwesomeIcon icon={faTrash} />
                 </button>
+                <DeleteDialog
+                  open={showAlert}
+                  onClose={handleClose}
+                  onConfirm={handleConfirm}
+                />
               </td>
             </tr>
           ))}
