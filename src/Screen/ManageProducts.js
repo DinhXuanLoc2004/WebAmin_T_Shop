@@ -68,6 +68,13 @@ export default function ManageProducts() {
 
   return (
     <div style={styles.container}>
+      <input
+        type="text"
+        placeholder="Search..."
+        value={searchItem} // Gán giá trị của state vào input
+        onChange={(e) => setSearchItem(e.target.value)}
+        style={styles.searchInPut}
+      />
       <table style={styles.table}>
         <thead>
           <tr>
@@ -123,7 +130,7 @@ export default function ManageProducts() {
                     handleDeleteProduct(product.id);
                   }}
                 >
-                  <FontAwesomeIcon icon={faTrash} /> Delete
+                  <FontAwesomeIcon icon={faTrash} />
                 </button>
               </td>
             </tr>
