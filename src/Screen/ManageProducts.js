@@ -13,21 +13,30 @@ import "../Css/Dialog.css";
 import axios from "axios";
 
 export default function ManageProducts() {
-  const [products,setProducts]= useState([])
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const result = await axios.post(
-          "http://192.168.0.114:5000/v1/api/product/get_all_products"
-        );
-        console.log(result);
-        setProducts(result.data.metadata.products);
-      } catch (error) {
-        console.error("Lỗi khi gọi API:", error);
-      }
-    };
-    fetchProducts();
-  }, []);
+  const [products, setProducts] = useState([
+    {
+      id: "709 - 230",
+      images: [
+        "https://tse1.mm.bing.net/th?id=OIP.m-i6q-NXULLqpFFCZ8Pu9wHaEK&pid=Api&P=0&h=180",
+        "https://tse4.mm.bing.net/th?id=OIP.2cVDwkg3RO8UZKUEWDKn8wHaFO&pid=Api&P=0&h=180",
+        "https://tse1.mm.bing.net/th?id=OIP.94mqu1rmJ4ySGjzpHJAL8gHaEo&pid=Api&P=0&h=180",
+      ],
+      fullName: "Longsleeve Violeta",
+      brand: "Uniqlo",
+      category: "Active",
+      rate: 4.5,
+      reviews: 24,
+      quantity: 10,
+      price: 71.56,
+      salePrice: 67.56,
+      sold: 123,
+      colors: ["#000000", "#9966FF", "#FF99FF", "#00FF38"],
+      sizes: ["S", "M", "L", "XL"],
+      description:
+        "A comfortable and stylish longsleeve perfect for all seasons. Made with premium cotton for an excellent fit. A comfortable and stylish longsleeve perfect for all seasons. Made with premium cotton for an excellent fit.",
+    },
+    
+  ]);
 
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -68,13 +77,6 @@ export default function ManageProducts() {
 
   return (
     <div style={styles.container}>
-      <input
-        type="text"
-        placeholder="Search..."
-        value={searchItem} // Gán giá trị của state vào input
-        onChange={(e) => setSearchItem(e.target.value)}
-        style={styles.searchInPut}
-      />
       <table style={styles.table}>
         <thead>
           <tr>
@@ -98,7 +100,7 @@ export default function ManageProducts() {
               style={{ cursor: "pointer" }}
               onClick={() => handleProductClick(product)}
             >
-              <td style={styles.thTdTable}>{product._id}</td>
+              <td style={styles.thTdTable}>{product.id}</td>
               <td style={styles.thTd}>
               <img src={product.thumb} alt="Product" style={styles.img} />
               </td>
@@ -111,11 +113,11 @@ export default function ManageProducts() {
                   ★
                 </span>
                 <span style={{ color: "gray", marginLeft: 10 }}>
-                  ({product.averageRating})
+                  ({product.reviews})
                 </span>
               </td>
-              <td style={styles.thTdTable}>{product.inventory_quantity}</td>
-              <td style={styles.thTdTable}>${product.price_min}</td>
+              <td style={styles.thTdTable}>{product.quantity}</td>
+              <td style={styles.thTdTable}>${product.price}</td>
               <td style={styles.thTdTable}>{product.sold} items</td>
               <td style={styles.thTd}>
                 <button style={styles.editBtn}>
@@ -130,13 +132,8 @@ export default function ManageProducts() {
                     handleDeleteProduct(product.id);
                   }}
                 >
-                  <FontAwesomeIcon icon={faTrash} />
+                  <FontAwesomeIcon icon={faTrash} /> Delete
                 </button>
-                <DeleteDialog
-                  open={showAlert}
-                  onClose={handleClose}
-                  onConfirm={handleConfirm}
-                />
               </td>
             </tr>
           ))}

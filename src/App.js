@@ -1,5 +1,3 @@
-import React from "react";
-import ManageProducts from "./Screen/ManageProducts";
 import Navigation from "./navigation/Navigation";
 import LoginScreen from "./Screen/LoginScreen";
 import {
@@ -18,16 +16,15 @@ function App() {
   };
 
   return (
-    // <ManageProducts />
     <Router>
-      <Routes>
-        <Route path="/login" element={<LoginScreen onLogin={handleLogin} />} />
-        <Route
-          path="/*"
-          element={isLoggedIn ? <Navigation /> : <Navigate to="/login" />}
-        />
-      </Routes>
-    </Router>
+    <Routes>
+      <Route path="/login" element={<LoginScreen onLogin={handleLogin} />} />
+      <Route
+        path="/*"
+        element={isLoggedIn ? <Navigation /> : <Navigate to="/login" />}
+      />
+    </Routes>
+  </Router>
   );
 }
 
