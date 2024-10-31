@@ -7,6 +7,7 @@ import {
   faChevronRight,
   faStar,
   faComment,
+  faPlus,
 } from "@fortawesome/free-solid-svg-icons";
 import Modal from "react-bootstrap/Modal";
 import "../Css/Dialog.css";
@@ -59,6 +60,16 @@ export default function ManageProducts() {
     setProducts(updatedProducts);
   };
 
+  const handleUpdateProduct = () => {
+    // Logic for adding a product goes here
+    console.log("Update Product button clicked");
+  };
+
+  const handleAddProduct = () => {
+    // Logic for adding a product goes here
+    console.log("Add Product button clicked");
+  };
+
   const handlePrevClick = () => {
     setCurrentIndex((prevIndex) =>
       prevIndex === 0
@@ -81,6 +92,10 @@ export default function ManageProducts() {
 
   return (
     <div style={styles.container}>
+      <button style={styles.addBtn} onClick={handleAddProduct}>
+        <FontAwesomeIcon icon={faPlus} style={{ marginRight: "5px" }} />
+        Add Product
+      </button>
       <table style={styles.table}>
         <thead>
           <tr>
@@ -260,7 +275,10 @@ export default function ManageProducts() {
                 {selectedProduct.colors.map((color, idx) => (
                   <span
                     key={idx}
-                    style={{ backgroundColor: color.name_color, ...styles.colorCircle }}
+                    style={{
+                      backgroundColor: color.name_color,
+                      ...styles.colorCircle,
+                    }}
                   ></span>
                 ))}
               </p>
@@ -286,7 +304,6 @@ export default function ManageProducts() {
                     {selectedProduct.name_brand}
                   </span>
                 </strong>{" "}
-
                 <strong>
                   Category:{" "}
                   <span style={{ fontWeight: "normal" }}>
@@ -355,6 +372,7 @@ const styles = {
   table: {
     width: "100%",
     borderCollapse: "collapse",
+    marginTop: "30px",
   },
   thTd: {
     textAlign: "center",
@@ -421,5 +439,19 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "center",
     width: "300px",
+  },
+  addBtn: {
+    position: "absolute",
+    top: "20px",
+    right: "20px",
+    backgroundColor: "green",
+    color: "white",
+    border: "none",
+    padding: "10px 15px",
+    cursor: "pointer",
+    borderRadius: "5px",
+    display: "flex",
+    alignItems: "center",
+    fontWeight: "bold",
   },
 };
