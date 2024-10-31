@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faTrash,
@@ -6,36 +6,36 @@ import {
   faChevronLeft,
   faChevronRight,
   faStar,
-  faComment
+  faComment,
 } from "@fortawesome/free-solid-svg-icons";
 import Modal from "react-bootstrap/Modal";
 import "../Css/Dialog.css";
+import axios from "axios";
 
 export default function ManageProducts() {
-  const [products, setProducts] = useState([
-    {
-      id: "709 - 230",
-      images: [
-        "https://tse1.mm.bing.net/th?id=OIP.m-i6q-NXULLqpFFCZ8Pu9wHaEK&pid=Api&P=0&h=180",
-        "https://tse4.mm.bing.net/th?id=OIP.2cVDwkg3RO8UZKUEWDKn8wHaFO&pid=Api&P=0&h=180",
-        "https://tse1.mm.bing.net/th?id=OIP.94mqu1rmJ4ySGjzpHJAL8gHaEo&pid=Api&P=0&h=180",
-      ],
-      fullName: "Longsleeve Violeta",
-      brand: "Uniqlo",
-      category: "Active",
-      rate: 4.5,
-      reviews: 24,
-      quantity: 10,
-      price: 71.56,
-      salePrice: 67.56,
-      sold: 123,
-      colors: ["#000000", "#9966FF", "#FF99FF", "#00FF38"],
-      sizes: ["S", "M", "L", "XL"],
-      description:
-        "A comfortable and stylish longsleeve perfect for all seasons. Made with premium cotton for an excellent fit. A comfortable and stylish longsleeve perfect for all seasons. Made with premium cotton for an excellent fit.",
-    },
-    
-  ]);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.post(
+          "http://192.168.1.51:5000/v1/api/product/get_all_products"
+        );
+
+        const productsData = response.data?.metadata?.products || [];
+
+        if (Array.isArray(productsData)) {
+          setProducts(productsData);
+          console.log(productsData);
+        } else {
+          console.warn("Dữ liệu sản phẩm không hợp lệ:", productsData);
+        }
+      } catch (error) {
+        console.error("Lỗi khi gọi API:", error);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const [products, setProducts] = useState([]);
 
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -99,24 +99,24 @@ export default function ManageProducts() {
               style={{ cursor: "pointer" }}
               onClick={() => handleProductClick(product)}
             >
-              <td style={styles.thTdTable}>{product.id}</td>
+              <td style={styles.thTdTable}>{product._id}</td>
               <td style={styles.thTd}>
-                <img src={product.images[0]} alt="Product" style={styles.img} />
+                <img src={product.thumb} alt="Product" style={styles.img} />
               </td>
-              <td style={styles.thTdTable}>{product.fullName}</td>
-              <td style={styles.thTdTable}>{product.brand}</td>
-              <td style={styles.thTdTable}>{product.category}</td>
+              <td style={styles.thTdTable}>{product.name_product}</td>
+              <td style={styles.thTdTable}>{product.name_brand}</td>
+              <td style={styles.thTdTable}>{product.name_category}</td>
               <td style={styles.thTdTable}>
-                <span>{product.rate}</span>
+                <span>{product.averageRating}</span>
                 <span style={{ color: "yellow", fontSize: 24, marginLeft: 10 }}>
                   ★
                 </span>
                 <span style={{ color: "gray", marginLeft: 10 }}>
-                  ({product.reviews})
+                  ({product.countReview})
                 </span>
               </td>
-              <td style={styles.thTdTable}>{product.quantity}</td>
-              <td style={styles.thTdTable}>${product.price}</td>
+              <td style={styles.thTdTable}>{product.inventory_quantity}</td>
+              <td style={styles.thTdTable}>${product.price_max}</td>
               <td style={styles.thTdTable}>{product.sold} items</td>
               <td style={styles.thTd}>
                 <button style={styles.editBtn}>
@@ -152,7 +152,7 @@ export default function ManageProducts() {
               {/* Main Image */}
               <div>
                 <img
-                  src={selectedProduct.images[currentIndex]}
+                  src={selectedProduct.thumb}
                   alt="Main"
                   style={styles.mainImage}
                 />
@@ -194,82 +194,104 @@ export default function ManageProducts() {
               </div>
             </div>
             <div style={styles.productInfo}>
-  <div>
-    <h1>{selectedProduct.fullName}</h1>
-    <div style={styles.priceRateContainer}>
-      <div style={styles.priceContainer}>
-        <h4 style={{ fontWeight: "bold" }}>${selectedProduct.salePrice}</h4>
-        <h6>
-          <span
-            style={{ textDecoration: "line-through", color: "gray" }}
-          >
-            ${selectedProduct.price}
-          </span>
-        </h6>
-      </div>
-      <div style={styles.rateReviewsContainer}>
-        <p style={{ display: "flex", alignItems: "center" }}>
-          <span
-            style={{
-              color: "orange",
-              display: "flex",
-              alignItems: "center",
-            }}
-          >
-            <FontAwesomeIcon
-              icon={faStar}
-              style={{ marginRight: "5px" }}
-            />
-            {selectedProduct.rate}
-          </span>
-          <span
-            style={{
-              color: "#b1b1b1",
-              marginLeft: "10px",
-              display: "flex",
-              alignItems: "center",
-            }}
-          >
-            <FontAwesomeIcon
-              icon={faComment}
-              style={{ marginRight: "5px" }}
-            />
-            {selectedProduct.reviews} Reviews
-          </span>
-        </p>
-      </div>
-    </div>
-  </div>
-  <p>
-    <div style={{ fontWeight: "bold", marginBottom: "5px" }}>
-      Colors:
-    </div>
-    {selectedProduct.colors.map((color, idx) => (
-      <span
-        key={idx}
-        style={{ backgroundColor: color, ...styles.colorCircle }}
-      ></span>
-    ))}
-  </p>
-  <p>
-    <div style={{ fontWeight: "bold", marginBottom: "5px" }}>
-      Sizes:
-    </div>
-    {selectedProduct.sizes.map((size, idx) => (
-      <button key={idx} style={styles.sizeButton}>
-        {size}
-      </button>
-    ))}
-  </p>
-  <p style={{width: "70%", justifyContent: "space-between", display: "flex"}}>
-    <strong>Brand: <span style={{fontWeight: "normal"}}>{selectedProduct.brand}</span></strong> <span></span>
-    <strong>Category: <span style={{fontWeight: "normal"}}>{selectedProduct.category}</span></strong> 
-  </p>
-  <p>
-    <strong>Description:</strong> 
-    <div>{selectedProduct.description}</div>
-  </p>
-</div>
+              <div>
+                <h1>{selectedProduct.name_product}</h1>
+                <div style={styles.priceRateContainer}>
+                  <div style={styles.priceContainer}>
+                    <h4 style={{ fontWeight: "bold" }}>
+                      ${selectedProduct.salePrice}
+                    </h4>
+                    <h6>
+                      <span
+                        style={{
+                          textDecoration: "line-through",
+                          color: "gray",
+                        }}
+                      >
+                        ${selectedProduct.price_max}
+                      </span>
+                    </h6>
+                  </div>
+                  <div style={styles.rateReviewsContainer}>
+                    <p style={{ display: "flex", alignItems: "center" }}>
+                      <span
+                        style={{
+                          color: "orange",
+                          display: "flex",
+                          alignItems: "center",
+                        }}
+                      >
+                        <FontAwesomeIcon
+                          icon={faStar}
+                          style={{ marginRight: "5px" }}
+                        />
+                        {selectedProduct.rate}
+                      </span>
+                      <span
+                        style={{
+                          color: "#b1b1b1",
+                          marginLeft: "10px",
+                          display: "flex",
+                          alignItems: "center",
+                        }}
+                      >
+                        <FontAwesomeIcon
+                          icon={faComment}
+                          style={{ marginRight: "5px" }}
+                        />
+                        {selectedProduct.reviews} Reviews
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <p>
+                <div style={{ fontWeight: "bold", marginBottom: "5px" }}>
+                  Colors:
+                </div>
+                {selectedProduct.colors.map((color, idx) => (
+                  <span
+                    key={idx}
+                    style={{ backgroundColor: color, ...styles.colorCircle }}
+                  ></span>
+                ))}
+              </p>
+              <p>
+                <div style={{ fontWeight: "bold", marginBottom: "5px" }}>
+                  Sizes:
+                </div>
+                {selectedProduct.sizes.map((size, idx) => (
+                  <button key={idx} style={styles.sizeButton}>
+                    {size}
+                  </button>
+                ))}
+              </p>
+              <p
+                style={{
+                  width: "70%",
+                  justifyContent: "space-between",
+                  display: "flex",
+                }}
+              >
+                <strong>
+                  Brand:{" "}
+                  <span style={{ fontWeight: "normal" }}>
+                    {selectedProduct.brand}
+                  </span>
+                </strong>{" "}
+                <span></span>
+                <strong>
+                  Category:{" "}
+                  <span style={{ fontWeight: "normal" }}>
+                    {selectedProduct.category}
+                  </span>
+                </strong>
+              </p>
+              <p>
+                <strong>Description:</strong>
+                <div>{selectedProduct.description}</div>
+              </p>
+            </div>
           </Modal.Body>
         </Modal>
       )}
@@ -303,7 +325,7 @@ const styles = {
   },
   thumbnailContainer: {
     display: "flex",
-    gap: "25px", 
+    gap: "25px",
   },
   thumbnail: {
     width: "80px",
@@ -392,5 +414,5 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "center",
     width: "300px",
-  }
+  },
 };

@@ -1,364 +1,203 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import ShowProductsContainer from "../component/ShowProductsContainer";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEdit, faTrash, faPlus } from "@fortawesome/free-solid-svg-icons";
-import { height } from "@fortawesome/free-solid-svg-icons/fa0";
-export default function ManageCategory() {
-  // State để theo dõi mục được chọn
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedSubCategory, setSelectedSubCategory] = useState("");
 
-  // Function xử lý khi click vào mục chính
+export default function ManageProducts() {
+  const [mainCategories, setMainCategories] = useState([]);
+  const [subCategories, setSubCategories] = useState([]);
+  const [childCategories, setChildCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedSubCategory, setSelectedSubCategory] = useState(null);
+  const [selectedChildCategory, setSelectedChildCategory] = useState(null);
+  const [product, setProducts] = useState([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get(
+          "http://192.168.1.51:5000/v1/api/category/get_categories/"
+        );
+        setMainCategories(response.data.metadata.categories);
+      } catch (error) {
+        console.error("Lỗi: ", error);
+      }
+    };
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    if (mainCategories.length > 0) {
+      const parentId1 = mainCategories[0]._id;
+      const fetchSubCategories = async () => {
+        try {
+          const response = await axios.get(
+            `http://192.168.1.51:5000/v1/api/category/get_categories/${parentId1}`
+          );
+          setSubCategories(response.data.metadata.categories);
+        } catch (error) {
+          console.error("Lỗi khi lấy sub categories: ", error);
+        }
+      };
+      fetchSubCategories();
+    }
+  }, [mainCategories]);
+
+  useEffect(() => {
+    if (subCategories.length > 0) {
+      const parentId2 = subCategories[0]._id;
+      const fetchChildCategories = async () => {
+        try {
+          const response = await axios.get(
+            `http://192.168.1.51:5000/v1/api/category/get_categories/${parentId2}`
+          );
+          setChildCategories(response.data.metadata.categories);
+        } catch (error) {
+          console.error("Lỗi khi lấy child categories: ", error);
+        }
+      };
+      fetchChildCategories();
+    }
+  }, [subCategories]);
+
   const handleCategoryClick = (category) => {
     setSelectedCategory(category);
+    setSubCategories([]);
+    setChildCategories([]);
+    const fetchSubCategories = async () => {
+      try {
+        const response = await axios.get(
+          `http://192.168.1.51:5000/v1/api/category/get_categories/${category._id}`
+        );
+        setSubCategories(response.data.metadata.categories);
+      } catch (error) {
+        console.error("Lỗi khi lấy sub categories: ", error);
+      }
+    };
+    fetchSubCategories();
   };
 
-  // Function xử lý khi click vào sub-category
   const handleSubCategoryClick = (subCategory) => {
-    setSelectedSubCategory(subCategory);
-  };
-  const MenClothes = [
-    {
-      id: 1,
-      name: "Tee",
-      price: 20,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-      quantity: 23,
-      brand: "Balenciaga",
-    },
-    {
-      id: 2,
-      name: "Pants",
-      price: 50,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-        quantity: 23,
-      brand: "Balenciaga",
-    },
-  ];
-  const MenShoes = [
-    {
-      id: 1,
-      name: "giay nam",
-      price: 20,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1", // Thay bằng URL ảnh thực tế
-        quantity: 23,
-        brand: "Balenciaga",
-    },
-    {
-      id: 2,
-      name: "giay nam",
-      price: 50,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-        quantity: 23,
-      brand: "Balenciaga",
-    },
-  ];
-  const MenAccessories = [
-    {
-      id: 1,
-      name: "phu kien nam",
-      price: 20,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1", // Thay bằng URL ảnh thực tế
-        quantity: 23,
-      brand: "Balenciaga",
-    },
-    {
-      id: 2,
-      name: "phu kien nam",
-      price: 50,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-      quantity: 23,
-      brand: "Balenciaga",
-    },
-    {
-        id: 3,
-        name: "phu kien nam",
-        price: 50,
-        image:
-          "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-        quantity: 23,
-        brand: "Balenciaga",
-      },
-      {
-        id: 4,
-        name: "phu kien nam",
-        price: 50,
-        image:
-          "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-        quantity: 23,
-        brand: "Balenciaga",
-      },
-      {
-        id: 5,
-        name: "phu kien nam",
-        price: 50,
-        image:
-          "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-        quantity: 23,
-        brand: "Balenciaga",
-      },
-      {
-        id: 6,
-        name: "phu kien nam",
-        price: 50,
-        image:
-          "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-        quantity: 23,
-        brand: "Balenciaga",
-      },
-      {
-        id: 7,
-        name: "phu kien nam",
-        price: 50,
-        image:
-          "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-        quantity: 23,
-        brand: "Balenciaga",
-      },
-  ];
-  const WoMenClothes = [
-    {
-      id: 1,
-      name: "Tee nứ",
-      price: 20,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1", // Thay bằng URL ảnh thực tế
-        quantity: 23,
-      brand: "Balenciaga",
-    },
-    {
-      id: 2,
-      name: "Pants nữ",
-      price: 50,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-      quantity: 23,
-      brand: "Balenciaga",
-    },
-  ];
-  const WoMenShoes = [
-    {
-      id: 1,
-      name: "giay nữ",
-      price: 20,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1", // Thay bằng URL ảnh thực tế
-      quantity: 23,
-      brand: "Balenciaga",
-    },
-    {
-      id: 2,
-      name: "giay nữ",
-      price: 50,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-      quantity: 23,
-      brand: "Balenciaga",
-    },
-  ];
-  const WoMenAccessories = [
-    {
-      id: 1,
-      name: "phu kien nữ",
-      price: 20,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1", // Thay bằng URL ảnh thực tế
-      quantity: 23,
-      brand: "Balenciaga",
-    },
-    {
-      id: 2,
-      name: "phu kien nữ",
-      price: 50,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-      quantity: 23,
-      brand: "Balenciaga",
-    },
-  ];
-  const kidClothes = [
-    {
-      id: 1,
-      name: "Tee nít",
-      price: 20,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1", // Thay bằng URL ảnh thực tế
-      quantity: 23,
-      brand: "Balenciaga",
-    },
-    {
-      id: 2,
-      name: "Pants nít",
-      price: 50,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-      quantity: 23,
-      brand: "Balenciaga",
-    },
-  ];
-  const kidShoes = [
-    {
-      id: 1,
-      name: "giay nít",
-      price: 20,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1", // Thay bằng URL ảnh thực tế
-      quantiy: 23,
-      brand: "Balenciaga",
-    },
-    {
-      id: 2,
-      name: "giay nít",
-      price: 50,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-      quantiy: 23,
-      brand: "Balenciaga",
-    },
-  ];
-  const kidAccessories = [
-    {
-      id: 1,
-      name: "phu kien nít",
-      price: 20,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1", // Thay bằng URL ảnh thực tế
-      quantiy: 23,
-      brand: "Balenciaga",
-    },
-    {
-      id: 2,
-      name: "phu kien nít",
-      price: 50,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-      quantiy: 23,
-      brand: "Balenciaga",
-    },
-  ];
-
-  // Hàm chọn sản phẩm dựa trên category và subcategory
-  const getProducts = () => {
-    if (selectedCategory === "Men") {
-      if (selectedSubCategory === "Clothes") {
-        return MenClothes;
-      } else if (selectedSubCategory === "Shoes") {
-        return MenShoes;
-      } else if (selectedSubCategory === "Accessories") {
-        return MenAccessories;
-      }
-    } else if (selectedCategory === "Women") {
-      if (selectedSubCategory === "Clothes") {
-        return WoMenClothes;
-      } else if (selectedSubCategory === "Shoes") {
-        return WoMenShoes;
-      } else if (selectedSubCategory === "Accessories") {
-        return WoMenAccessories;
-      }
-    } else if (selectedCategory === "Kids") {
-      if (selectedSubCategory === "Clothes") {
-        return kidClothes;
-      } else if (selectedSubCategory === "Shoes") {
-        return kidShoes;
-      } else if (selectedSubCategory === "Accessories") {
-        return kidAccessories;
-      }
+    if (!selectedCategory) {
+      return;
     }
-    return [];
+    setSelectedSubCategory(subCategory);
+    setChildCategories([]);
+    const fetchChildCategories = async () => {
+      try {
+        const response = await axios.get(
+          `http://192.168.1.51:5000/v1/api/category/get_categories/${subCategory._id}`
+        );
+        setChildCategories(response.data.metadata.categories);
+      } catch (error) {
+        console.error("Lỗi khi lấy child categories: ", error);
+      }
+    };
+    fetchChildCategories();
   };
+
+  const handleChildCategoryClick = (childCategory) => {
+    if (!selectedSubCategory) {
+      return;
+    }
+    setSelectedChildCategory(childCategory);
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.post(
+          "http://192.168.1.51:5000/v1/api/product/get_all_products"
+        );
+
+        const productsData = response.data?.metadata?.products || [];
+        if (Array.isArray(productsData)) {
+          setProducts(productsData);
+        } else {
+          console.warn("Dữ liệu sản phẩm không hợp lệ:", productsData);
+        }
+      } catch (error) {
+        console.error("Lỗi khi gọi API:", error);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // Lọc sản phẩm theo category con đã chọn
+  const filteredProducts = selectedChildCategory
+    ? product.filter((prod) => prod.name_category === selectedChildCategory.name_category)
+    : [];
+
   return (
     <div>
+      {/* Navigation Row 1 */}
       <div style={styles.navigationTop}>
-        <div
-          style={
-            selectedCategory === "Men"
-              ? styles.selectedItem
-              : styles.navigationItem
-          }
-          onClick={() => handleCategoryClick("Men")}
-        >
-          Men
-        </div>
-        <div
-          style={
-            selectedCategory === "Women"
-              ? styles.selectedItem
-              : styles.navigationItem
-          }
-          onClick={() => handleCategoryClick("Women")}
-        >
-          Women
-        </div>
-        <div
-          style={
-            selectedCategory === "Kids"
-              ? styles.selectedItem
-              : styles.navigationItem
-          }
-          onClick={() => handleCategoryClick("Kids")}
-        >
-          Kids
-        </div>
-        <FontAwesomeIcon icon={faPlus} style={styles.addButton} />
+        {mainCategories.map((category) => (
+          <div
+            key={category._id}
+            style={
+              selectedCategory?._id === category._id
+                ? styles.selectedItem
+                : styles.navigationItem
+            }
+            onClick={() => handleCategoryClick(category)}
+          >
+            {category.name_category}
+          </div>
+        ))}
+        <button style={styles.addButton}>
+          <FontAwesomeIcon icon={faPlus} />
+        </button>
       </div>
 
       {/* Navigation Row 2 */}
       <div style={styles.navigationBottom}>
-        <div
-          style={
-            selectedSubCategory === "Clothes"
-              ? styles.selectedItem
-              : styles.navigationItem
-          }
-          onClick={() => handleSubCategoryClick("Clothes")}
-        >
-          Clothes
-          <FontAwesomeIcon icon={faEdit} style={styles.icon} />
-          <FontAwesomeIcon icon={faTrash} style={styles.icon} />
-        </div>
-        <div
-          style={
-            selectedSubCategory === "Shoes"
-              ? styles.selectedItem
-              : styles.navigationItem
-          }
-          onClick={() => handleSubCategoryClick("Shoes")}
-        >
-          Shoes
-          <FontAwesomeIcon icon={faEdit} style={styles.icon} />
-          <FontAwesomeIcon icon={faTrash} style={styles.icon} />
-        </div>
-        <div
-          style={
-            selectedSubCategory === "Accessories"
-              ? styles.selectedItem
-              : styles.navigationItem
-          }
-          onClick={() => handleSubCategoryClick("Accessories")}
-        >
-          Accessories
-          <FontAwesomeIcon icon={faEdit} style={styles.icon} />
-          <FontAwesomeIcon icon={faTrash} style={styles.icon} />
-        </div>
+        {subCategories.map((subCategory) => (
+          <div
+            key={subCategory._id}
+            style={
+              selectedSubCategory?._id === subCategory._id
+                ? styles.selectedItem
+                : styles.navigationItem
+            }
+            onClick={() => handleSubCategoryClick(subCategory)}
+          >
+            {subCategory.name_category}
+            <FontAwesomeIcon icon={faEdit} style={styles.icon} />
+            <FontAwesomeIcon icon={faTrash} style={styles.icon} />
+          </div>
+        ))}
+      </div>
+      {/* Navigation Row 3 */}
+      <div style={styles.navigationBottom}>
+        {childCategories.map((childCategory) => (
+          <div
+            key={childCategory._id}
+            style={
+              selectedChildCategory?._id === childCategory._id
+                ? styles.selectedItem
+                : styles.navigationItem
+            }
+            onClick={() => handleChildCategoryClick(childCategory)}
+          >
+            {childCategory.name_category}
+          </div>
+        ))}
       </div>
 
       {/* Render màn hình tương ứng */}
       <div style={styles.screen}>
         <div style={styles.containerShowProducts}>
-          {getProducts().map((product) => (
+          {/* Chỉ hiển thị sản phẩm nếu đã chọn category con */}
+          {filteredProducts.map((prod) => (
             <ShowProductsContainer
-              key={product.id}
-              image={product.image}
-              name={product.name}
-              price={product.price}
-              quantity={product.quantity}
-              brand={product.brand}
+              key={prod._id} // Sử dụng _id làm key
+              image={prod.thumb}
+              name={prod.name_product}
+              price={prod.price_min} // Hiển thị giá tối thiểu
+              quantity={prod.inventory_quantity}
+              brand={prod.name_brand}
             />
           ))}
         </div>
@@ -366,16 +205,15 @@ export default function ManageCategory() {
     </div>
   );
 }
+
 const styles = {
   navigationTop: {
     display: "flex",
-    // justifyContent: "space-between",
     padding: "10px",
     backgroundColor: "#f5f5f5",
   },
   navigationBottom: {
     display: "flex",
-    // justifyContent: "space-between",
     padding: "10px",
     backgroundColor: "#f5f5f5",
     borderTop: "2px solid red",
@@ -400,6 +238,10 @@ const styles = {
     borderRadius: "20%",
     width: "30px",
     height: "30px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
   },
   screen: {
     marginTop: "20px",
@@ -408,10 +250,10 @@ const styles = {
   },
   containerShowProducts: {
     display: "flex",
-    flexWrap: "wrap", // Để các item tự động xuống dòng khi không đủ chỗ
-    justifyContent: "space-around", // Để căn giữa các item
-    gap: "20px", // Khoảng cách giữa các item
-    width: "70%", //
+    flexWrap: "wrap",
+    justifyContent: "space-around",
+    gap: "20px",
+    width: "70%",
   },
   icon: {
     cursor: "pointer",

@@ -13,12 +13,11 @@ import DashBoard from "../Screen/DashBoard";
 import ManageProducts from "../Screen/ManageProducts";
 import ManageUser from "../Screen/ManageUser";
 import Orders from "../Screen/Orders";
-import Setting from "../Screen/Setting";
 import ManageCategory from "../Screen/ManageCategory";
 import EditProduct from "../Screen/EditProduct";
+import ManageBrand from "../Screen/ManageBrand";
 
 // Hàm component cho trang Brand
-const Brand = () => <h2 style={styles.heading}>Brand</h2>;
 
 export default function Navigation() {
   return (
@@ -61,12 +60,6 @@ export default function Navigation() {
               User
             </Link>
           </li>
-          <li style={styles.listItem}>
-            <Link style={styles.link} to="/setting">
-              <FontAwesomeIcon icon={faGear} style={styles.icon} />
-              Setting
-            </Link>
-          </li>
         </ul>
       </nav>
       <div style={styles.content}>
@@ -75,9 +68,8 @@ export default function Navigation() {
           <Route path="/order" element={<Orders />} />
           <Route path="/products" element={<ManageProducts />} />
           <Route path="/category" element={<ManageCategory />} />
-          <Route path="/brand" element={<Brand />} />
+          <Route path="/brand" element={<ManageBrand />} />
           <Route path="/user" element={<ManageUser />} />
-          <Route path="/setting" element={<Setting />} />
           <Route path="/edit" element={<EditProduct />} />
         </Routes>
       </div>
