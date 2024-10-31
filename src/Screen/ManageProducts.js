@@ -6,45 +6,45 @@ import {
   faChevronLeft,
   faChevronRight,
   faStar,
-  faComment
+  faComment,
 } from "@fortawesome/free-solid-svg-icons";
 import Modal from "react-bootstrap/Modal";
 import "../Css/Dialog.css";
 import axios from "axios";
 
 export default function ManageProducts() {
-  const [products, setProducts] = useState([
-    {
-      id: "709 - 230",
-      images: [
-        "https://tse1.mm.bing.net/th?id=OIP.m-i6q-NXULLqpFFCZ8Pu9wHaEK&pid=Api&P=0&h=180",
-        "https://tse4.mm.bing.net/th?id=OIP.2cVDwkg3RO8UZKUEWDKn8wHaFO&pid=Api&P=0&h=180",
-        "https://tse1.mm.bing.net/th?id=OIP.94mqu1rmJ4ySGjzpHJAL8gHaEo&pid=Api&P=0&h=180",
-      ],
-      fullName: "Longsleeve Violeta",
-      brand: "Uniqlo",
-      category: "Active",
-      rate: 4.5,
-      reviews: 24,
-      quantity: 10,
-      price: 71.56,
-      salePrice: 67.56,
-      sold: 123,
-      colors: ["#000000", "#9966FF", "#FF99FF", "#00FF38"],
-      sizes: ["S", "M", "L", "XL"],
-      description:
-        "A comfortable and stylish longsleeve perfect for all seasons. Made with premium cotton for an excellent fit. A comfortable and stylish longsleeve perfect for all seasons. Made with premium cotton for an excellent fit.",
-    },
-    
-  ]);
-
+  const [products, setProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const handleProductClick = (products) => {
-    setSelectedProduct(products);
-    setIsDialogOpen(true);
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const result = await axios.post(
+          "http://192.168.7.101:5000/v1/api/product/get_all_products"
+        );
+        setProducts(result.data.metadata.products);
+      } catch (error) {
+        console.error("Lỗi khi gọi API:", error);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  const handleProductClick = async (productId) => {
+    console.log("Product ID:", productId); // Add this line
+    if (!productId) return; // Add a check to avoid undefined ID
+    try {
+      const result = await axios.get(
+        `http://localhost:5000/v1/api/product/get_detail_product?product_id=${productId}`
+      );
+      console.log("Product Details:", result.data.metadata);
+      setSelectedProduct(result.data.metadata);
+      setIsDialogOpen(true);
+    } catch (error) {
+      console.error("Error fetching product details:", error);
+    }
   };
 
   const handleCloseDialog = () => {
@@ -61,13 +61,17 @@ export default function ManageProducts() {
 
   const handlePrevClick = () => {
     setCurrentIndex((prevIndex) =>
-      prevIndex === 0 ? selectedProduct.thumb.length - 1 : prevIndex - 1
+      prevIndex === 0
+        ? selectedProduct.images_product.length - 1
+        : prevIndex - 1
     );
   };
 
   const handleNextClick = () => {
     setCurrentIndex((prevIndex) =>
-      prevIndex === selectedProduct.thumb.length - 1 ? 0 : prevIndex + 1
+      prevIndex === selectedProduct.images_product.length - 1
+        ? 0
+        : prevIndex + 1
     );
   };
 
@@ -98,11 +102,11 @@ export default function ManageProducts() {
             <tr
               key={index}
               style={{ cursor: "pointer" }}
-              onClick={() => handleProductClick(product)}
+              onClick={() => handleProductClick(product._id)}
             >
-              <td style={styles.thTdTable}>{product.id}</td>
+              <td style={styles.thTdTable}>{product._id}</td>
               <td style={styles.thTd}>
-              <img src={product.thumb} alt="Product" style={styles.img} />
+                <img src={product.thumb} alt="Product" style={styles.img} />
               </td>
               <td style={styles.thTdTable}>{product.name_product}</td>
               <td style={styles.thTdTable}>{product.name_brand}</td>
@@ -113,11 +117,11 @@ export default function ManageProducts() {
                   ★
                 </span>
                 <span style={{ color: "gray", marginLeft: 10 }}>
-                  ({product.reviews})
+                  ({product.averageRating})
                 </span>
               </td>
-              <td style={styles.thTdTable}>{product.quantity}</td>
-              <td style={styles.thTdTable}>${product.price}</td>
+              <td style={styles.thTdTable}>{product.inventory_quantity}</td>
+              <td style={styles.thTdTable}>${product.price_min}</td>
               <td style={styles.thTdTable}>{product.sold} items</td>
               <td style={styles.thTd}>
                 <button style={styles.editBtn}>
@@ -152,11 +156,13 @@ export default function ManageProducts() {
             <div style={styles.galleryContainer}>
               {/* Main Image */}
               <div>
-                <img
-                  src={selectedProduct.thumb[currentIndex]}
-                  alt="Main"
-                  style={styles.mainImage}
-                />
+                {selectedProduct && selectedProduct.images_product && (
+                  <img
+                    src={selectedProduct.images_product[currentIndex].url} // Access url from images_product array
+                    alt="Main"
+                    style={styles.mainImage}
+                  />
+                )}
               </div>
 
               {/* Navigation Arrows and Thumbnails */}
@@ -168,7 +174,7 @@ export default function ManageProducts() {
 
                 {/* Thumbnails */}
                 <div style={styles.thumbnailContainer}>
-                  {selectedProduct.thumb.map((image, index) => (
+                  {selectedProduct.images_product.map((image, index) => (
                     <div
                       key={index}
                       onClick={() => handleThumbnailClick(index)}
@@ -180,7 +186,7 @@ export default function ManageProducts() {
                       }}
                     >
                       <img
-                        src={image}
+                        src={image.url}
                         alt={`Thumbnail ${index}`}
                         style={styles.thumbnailImage}
                       />
@@ -194,83 +200,105 @@ export default function ManageProducts() {
                 </button>
               </div>
             </div>
+
             <div style={styles.productInfo}>
-  <div>
-    <h1>{selectedProduct.fullName}</h1>
-    <div style={styles.priceRateContainer}>
-      <div style={styles.priceContainer}>
-        <h4 style={{ fontWeight: "bold" }}>${selectedProduct.salePrice}</h4>
-        <h6>
-          <span
-            style={{ textDecoration: "line-through", color: "gray" }}
-          >
-            ${selectedProduct.price}
-          </span>
-        </h6>
-      </div>
-      <div style={styles.rateReviewsContainer}>
-        <p style={{ display: "flex", alignItems: "center" }}>
-          <span
-            style={{
-              color: "orange",
-              display: "flex",
-              alignItems: "center",
-            }}
-          >
-            <FontAwesomeIcon
-              icon={faStar}
-              style={{ marginRight: "5px" }}
-            />
-            {selectedProduct.rate}
-          </span>
-          <span
-            style={{
-              color: "#b1b1b1",
-              marginLeft: "10px",
-              display: "flex",
-              alignItems: "center",
-            }}
-          >
-            <FontAwesomeIcon
-              icon={faComment}
-              style={{ marginRight: "5px" }}
-            />
-            {selectedProduct.reviews} Reviews
-          </span>
-        </p>
-      </div>
-    </div>
-  </div>
-  <p>
-    <div style={{ fontWeight: "bold", marginBottom: "5px" }}>
-      Colors:
-    </div>
-    {selectedProduct.colors.map((color, idx) => (
-      <span
-        key={idx}
-        style={{ backgroundColor: color, ...styles.colorCircle }}
-      ></span>
-    ))}
-  </p>
-  <p>
-    <div style={{ fontWeight: "bold", marginBottom: "5px" }}>
-      Sizes:
-    </div>
-    {selectedProduct.sizes.map((size, idx) => (
-      <button key={idx} style={styles.sizeButton}>
-        {size}
-      </button>
-    ))}
-  </p>
-  <p style={{width: "70%", justifyContent: "space-between", display: "flex"}}>
-    <strong>Brand: <span style={{fontWeight: "normal"}}>{selectedProduct.brand}</span></strong> <span></span>
-    <strong>Category: <span style={{fontWeight: "normal"}}>{selectedProduct.category}</span></strong> 
-  </p>
-  <p>
-    <strong>Description:</strong> 
-    <div>{selectedProduct.description}</div>
-  </p>
-</div>
+              <div>
+                <h1>{selectedProduct.name_product}</h1>
+                <div style={styles.priceRateContainer}>
+                  <div style={styles.priceContainer}>
+                    <h4 style={{ fontWeight: "bold" }}>
+                      ${selectedProduct.price}
+                    </h4>
+                    <h6>
+                      <span
+                        style={{
+                          textDecoration: "line-through",
+                          color: "gray",
+                        }}
+                      >
+                        ${selectedProduct.price}
+                      </span>
+                    </h6>
+                  </div>
+                  <div style={styles.rateReviewsContainer}>
+                    <p style={{ display: "flex", alignItems: "center" }}>
+                      <span
+                        style={{
+                          color: "orange",
+                          display: "flex",
+                          alignItems: "center",
+                        }}
+                      >
+                        <FontAwesomeIcon
+                          icon={faStar}
+                          style={{ marginRight: "5px" }}
+                        />
+                        {selectedProduct.averageRating}
+                      </span>
+                      <span
+                        style={{
+                          color: "#b1b1b1",
+                          marginLeft: "10px",
+                          display: "flex",
+                          alignItems: "center",
+                        }}
+                      >
+                        <FontAwesomeIcon
+                          icon={faComment}
+                          style={{ marginRight: "5px" }}
+                        />
+                        {selectedProduct.countReview} Reviews
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <p>
+                <div style={{ fontWeight: "bold", marginBottom: "5px" }}>
+                  Colors:
+                </div>
+                {selectedProduct.colors.map((color, idx) => (
+                  <span
+                    key={idx}
+                    style={{ backgroundColor: color.name_color, ...styles.colorCircle }}
+                  ></span>
+                ))}
+              </p>
+              <p>
+                <div style={{ fontWeight: "bold", marginBottom: "5px" }}>
+                  Sizes:
+                </div>
+                {selectedProduct.sizes.map((size, idx) => (
+                  <button key={idx} style={styles.sizeButton}>
+                    {size.size}
+                  </button>
+                ))}
+              </p>
+              <p
+                style={{
+                  justifyContent: "space-between",
+                  display: "flex",
+                }}
+              >
+                <strong>
+                  Brand:{" "}
+                  <span style={{ fontWeight: "normal" }}>
+                    {selectedProduct.name_brand}
+                  </span>
+                </strong>{" "}
+
+                <strong>
+                  Category:{" "}
+                  <span style={{ fontWeight: "normal" }}>
+                    {selectedProduct.name_category}
+                  </span>
+                </strong>
+              </p>
+              <p>
+                <strong>Description:</strong>
+                <div>{selectedProduct.description}</div>
+              </p>
+            </div>
           </Modal.Body>
         </Modal>
       )}
@@ -304,7 +332,7 @@ const styles = {
   },
   thumbnailContainer: {
     display: "flex",
-    gap: "25px", 
+    gap: "25px",
   },
   thumbnail: {
     width: "80px",
@@ -393,5 +421,5 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "center",
     width: "300px",
-  }
+  },
 };
