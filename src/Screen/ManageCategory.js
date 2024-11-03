@@ -3,8 +3,23 @@ import axios from "axios";
 import ShowProductsContainer from "../component/ShowProductsContainer";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEdit, faTrash, faPlus } from "@fortawesome/free-solid-svg-icons";
-
+import AddSubCategoryModal from "../component/AddSubCategoryModal";
+import AddMainCategoryModal from "../component/AddMainCategoryModal";
+import AddChildCategoryModal from "../component/AddChildCategoryModal";
 export default function ManageProducts() {
+  //modal add category
+  const [isMainModalOpen, setIsMainModalOpen] = useState(false);
+  const openMainModal = () => setIsMainModalOpen(true);
+  const closeMainModal = () => setIsMainModalOpen(false);
+  
+  const [isSubModalOpen, setIsSubModalOpen] = useState(false);
+  const openSubModal = () => setIsSubModalOpen(true);
+  const closeSubModal = () => setIsSubModalOpen(false);
+
+  const [isChildModalOpen, setIsChildModalOpen] = useState(false);
+  const openChildModal = () => setIsChildModalOpen(true);
+  const closeChildModal = () => setIsChildModalOpen(false);
+
   const [mainCategories, setMainCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   const [childCategories, setChildCategories] = useState([]);
@@ -126,7 +141,9 @@ export default function ManageProducts() {
 
   // Lọc sản phẩm theo category con đã chọn
   const filteredProducts = selectedChildCategory
-    ? product.filter((prod) => prod.name_category === selectedChildCategory.name_category)
+    ? product.filter(
+        (prod) => prod.name_category === selectedChildCategory.name_category
+      )
     : [];
 
   return (
@@ -146,11 +163,19 @@ export default function ManageProducts() {
             {category.name_category}
           </div>
         ))}
-        <button style={styles.addButton}>
+        <button onClick={openMainModal} style={styles.addButton}>
           <FontAwesomeIcon icon={faPlus} />
         </button>
       </div>
-
+      <AddMainCategoryModal
+        isOpen={isMainModalOpen}
+        style
+        selectedCategory={selectedCategory} // Truyền danh mục đời 1 đã chọn
+        onMainCategoryAdded={(newMainCategory) =>
+          setMainCategories([...mainCategories, newMainCategory])
+        }
+        onRequestClose={closeMainModal}
+      />
       {/* Navigation Row 2 */}
       <div style={styles.navigationBottom}>
         {subCategories.map((subCategory) => (
@@ -164,11 +189,23 @@ export default function ManageProducts() {
             onClick={() => handleSubCategoryClick(subCategory)}
           >
             {subCategory.name_category}
-            <FontAwesomeIcon icon={faEdit} style={styles.icon} />
-            <FontAwesomeIcon icon={faTrash} style={styles.icon} />
+            {/* <FontAwesomeIcon icon={faEdit} style={styles.icon} />
+            <FontAwesomeIcon icon={faTrash} style={styles.icon} /> */}
           </div>
         ))}
+        <button onClick={openSubModal} style={styles.addButton}>
+          <FontAwesomeIcon icon={faPlus} />
+        </button>
       </div>
+      <AddSubCategoryModal
+        isOpen={isSubModalOpen}
+        style
+        onRequestClose={closeSubModal}
+        selectedCategory={selectedSubCategory} // Truyền danh mục đời 1 đã chọn
+        onSubCategoryAdded={(newSubCategory) =>
+          setSubCategories([...subCategories, newSubCategory])
+        }
+      />
       {/* Navigation Row 3 */}
       <div style={styles.navigationBottom}>
         {childCategories.map((childCategory) => (
@@ -184,7 +221,19 @@ export default function ManageProducts() {
             {childCategory.name_category}
           </div>
         ))}
+        <button onClick={openChildModal} style={styles.addButton}>
+          <FontAwesomeIcon icon={faPlus} />
+        </button>
       </div>
+      <AddChildCategoryModal
+        isOpen={isChildModalOpen}
+        style
+        onRequestClose={closeChildModal}
+        selectedCategory={selectedChildCategory} // Truyền danh mục đời 1 đã chọn
+        onChildCategoryAdded={(newChildCategory) =>
+          setChildCategories([...childCategories, newChildCategory])
+        }
+      />
 
       {/* Render màn hình tương ứng */}
       <div style={styles.screen}>
