@@ -17,8 +17,8 @@ export default function DeleteDialog({ open, onClose, onConfirm }) {
       borderRadius: "10px",
       padding: "20px",
       boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.1)",
-      height: "139px",
-      width: "277px",
+      height: "160px",
+      width: "280px",
     },
     title: {
       size: "18px",
@@ -48,7 +48,7 @@ export default function DeleteDialog({ open, onClose, onConfirm }) {
       <Box style={style.container}>
         <Typography id="modal-modal-title" variant="h6" component="h2">
           <CheckCircleOutlineIcon style={style.icon} />
-          <text style={style.title}>Alert</text>
+          <text style={style.title}>Delete</text>
         </Typography>
         <Typography id="modal-modal-description" sx={{ mt: 2 }}>
           <text style={style.description}> Do you want to delete it?</text>

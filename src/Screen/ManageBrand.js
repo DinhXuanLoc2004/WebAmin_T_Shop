@@ -1,19 +1,27 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 
 const ManageBrand = () => {
-  const products = Array(8).fill({
-    name: 'UNIQLO',
-    productQuantity: 2,
-    image: 'https://vanhoaduongpho.com/storage/news/nhung-chiec-ao-khoac-truong-ton-theo-thoi-gian-cua-carhartt-1706612744.png',
-  });
+  const [brands, setBrands] = useState([]);
+
+  useEffect(() => {
+    // Gọi API để lấy danh sách các thương hiệu
+    axios.get('http://192.168.1.51:5000/v1/api/brand/get_all_brands')
+      .then(response => {
+        setBrands(response.data.metadata); // Giả sử dữ liệu trả về từ API có định dạng { metadata: [...] }
+      })
+      .catch(error => {
+        console.error("Error fetching brands:", error);
+      });
+  }, []);
 
   return (
     <div style={styles.container}>
-      {products.map((product, index) => (
+      {brands.map((brand, index) => (
         <div key={index} style={styles.card}>
-          <img src={product.image} alt={product.name} style={styles.image} />
-          <h3 style={styles.name}>{product.name}</h3>
-          <p style={styles.price}>{product.productQuantity} products</p>
+          <img src={brand.image_brand.url} alt={brand.name_brand} style={styles.image} />
+          <h3 style={styles.name}>{brand.name_brand}</h3>
+          <p style={styles.price}>2 products</p> {/* Số lượng sản phẩm này có thể tuỳ chỉnh */}
           <div style={styles.buttonContainer}>
             <button style={styles.editButton}>EDIT</button>
             <button style={styles.deleteButton}>DELETE</button>
@@ -41,8 +49,8 @@ const styles = {
     boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)',
   },
   image: {
-    width: '100%',
-    height: 'auto',
+    width: 250,
+    height: 300,
     marginBottom: '10px',
   },
   name: {
