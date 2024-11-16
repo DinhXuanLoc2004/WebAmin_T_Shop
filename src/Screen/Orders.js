@@ -1,41 +1,26 @@
-import React, { useState } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEdit, faTrash } from "@fortawesome/free-solid-svg-icons";
-import DeleteDialog from "../component/DeleteDialog";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 
 export default function Orders() {
-  const order = [
-    {
-      id: "709 - 230",
-      fullName: "Jádasdack",
-      customer: "Domdom23aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1@gmail.com",
-      status: "Complete",
-      createdAt: "13-9-2010",
-      deadline: "18-9-2010",
-      price: 234,
-    },
-    {
-      id: "709 - 230",
-      fullName: "Jádasdack",
-      customer: "Domdom23aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1@gmail.com",
-      status: "Pending",
-      createdAt: "13-9-2010",
-      deadline: "18-9-2010",
-      price: 234,
-    },
-    {
-      id: "709 - 230",
-      fullName: "Jádasdack",
-      customer: "Domdom23aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1@gmail.com",
-      status: "Rejected",
-      createdAt: "13-9-2010",
-      deadline: "18-9-2010",
-      price: 234,
-    },
-  ];
+  const [order, setOrders] = useState([]);
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const response = await axios.get(
+          "http://localhost:5000/v1/api/order/get_all_orders"
+        );
+        setOrders(response.data.metadata);
+      } catch (err) {
+        console.error("Failed to fetch orders:", err);
+      }
+    };
+
+    fetchOrders();
+  }, []);
+
   const [searchItem, setSearchItem] = useState("");
   const filteredItems = order.filter((order) =>
-    order.fullName.toLowerCase().includes(searchItem.toLowerCase())
+    order.user_id.toLowerCase().includes(searchItem.toLowerCase())
   );
   const [showAlert, setShowAlert] = useState(false);
 
@@ -45,6 +30,28 @@ export default function Orders() {
     console.log("Xóa dữ liệu");
     handleClose();
   };
+  //call api get all product để hiển thị ảnh product_orderr
+  const [products, setProducts] = useState([]);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.post(
+          "http://localhost:5000/v1/api/product/get_all_products"
+        );
+
+        const productsData = response.data?.metadata?.products || [];
+        if (Array.isArray(productsData)) {
+          setProducts(productsData);
+        } else {
+          console.warn("Dữ liệu sản phẩm không hợp lệ:", productsData);
+        }
+      } catch (error) {
+        console.error("Lỗi khi gọi API:", error);
+      }
+    };
+    fetchData();
+  }, []);
+  
   return (
     <div style={styles.container}>
       <input
@@ -57,77 +64,69 @@ export default function Orders() {
       <table style={styles.table}>
         <thead>
           <tr>
-            <th style={{ ...styles.thTd, ...styles.th }}>ID User</th>
-            <th style={{ ...styles.thTd, ...styles.th }}>Product</th>
-            <th style={{ ...styles.thTd, ...styles.th }}>Customer</th>
-            <th style={{ ...styles.thTd, ...styles.th }}>Status</th>
-            <th style={{ ...styles.thTd, ...styles.th }}>Created At</th>
-            <th style={{ ...styles.thTd, ...styles.th }}>Deadline</th>
-            <th style={{ ...styles.thTd, ...styles.th }}>Price</th>
-            <th style={{ ...styles.thTd, ...styles.th }}></th>
-            <th style={{ ...styles.thTd, ...styles.th }}></th>
+            <th style={styles.th}>ID</th>
+            <th style={styles.th}>Products</th>
+            <th style={styles.th}>Customer</th>
+            <th style={styles.th}>Status</th>
+            <th style={styles.th}>Created At</th>
+            <th style={styles.th}>Deadline</th>
+            <th style={styles.th}>Address</th>
+            <th style={styles.th}>Phone Number</th>
+            <th style={styles.th}>Total Amount</th>
           </tr>
         </thead>
-        <tbody style={{ paddingLeft: 100 }}>
+        <tbody>
           {filteredItems.map((order, index) => (
             <tr key={index}>
-              <td style={{ ...styles.thTdTable, width: "90%" }}>{order.id}</td>
+              <td style={styles.thTdTable}>{order._id}</td>
+              <td style={styles.thTd}>
+                {order.products_order.map((product, idx) => {
+                  const productInfo = products.find(
+                    (p) => p._id === product.product_variant_id
+                  ); 
+                  console.log("A",productInfo);
+                  
+                  return (
+                    <div key={idx}>
+                      <span>
+                        Tên sản phẩm:{" "}
+                        {productInfo?.name_product || "Không tìm thấy"}
+                      </span>
+                      , <span>Số lượng: {product.quantity}</span>,{" "}
+                      <span>Giá: {product.price}</span>
+                    </div>
+                  );
+                })}
+              </td>
 
-              <td style={styles.thTdTable}>{order.fullName}</td>
-              <td style={styles.thTdTable}>{order.customer}</td>
+              <td style={styles.thTdTable}>{order.full_name}</td>
               <td style={styles.thTd}>
                 <span
                   style={{
                     ...styles.status,
-                    ...(order.status === "Complete"
+                    ...(order.order_status === "confirming"
                       ? styles.completeStatus
-                      : order.status === "Pending"
+                      : order.order_status === "Pending"
                       ? styles.pendingStatus
                       : styles.rejectStatus),
                   }}
                 >
-                  {order.status}
+                  {order.order_status}
                 </span>
               </td>
-              <td style={{ ...styles.thTd, width: 70 }}>{order.createdAt}</td>
-              <td style={{ ...styles.thTd, width: 70 }}>{order.deadline}</td>
-              <td style={{ ...styles.thTdTable, width: 70 }}>{order.price}</td>
-
-              <td style={styles.thTd}>
-                <button
-                  style={styles.editBtn}
-                  onMouseOver={(e) =>
-                    (e.currentTarget.style.backgroundColor =
-                      styles.editBtn.backgroundColor)
-                  }
-                  onMouseOut={(e) =>
-                    (e.currentTarget.style.backgroundColor =
-                      styles.editBtnHover.backgroundColor)
-                  }
-                >
-                  <FontAwesomeIcon icon={faEdit} /> Edit
-                </button>
+              <td style={styles.thTd}>{order.createdAt}</td>
+              <td style={{ ...styles.thTd, fontWeight: 600, color: "red" }}>
+                {order.leadtime}
               </td>
-              <td style={{ ...styles.thTd, paddingLeft: 10 }}>
-                <button
-                  onClick={handleOpen}
-                  style={styles.deletekBtn}
-                  onMouseOver={(e) =>
-                    (e.currentTarget.style.backgroundColor =
-                      styles.deletekBtn.backgroundColor)
-                  }
-                  onMouseOut={(e) =>
-                    (e.currentTarget.style.backgroundColor =
-                      styles.deleteBtnHover.backgroundColor)
-                  }
-                >
-                  <FontAwesomeIcon icon={faTrash} /> Delete
-                </button>
-                <DeleteDialog
-                  open={showAlert}
-                  onClose={handleClose}
-                  onConfirm={handleConfirm}
-                />
+              <td style={styles.thTd}>
+                <div style={styles.addressContainer}>
+                  <span>{order.province_name}, </span>
+                  <span>{order.district_name}</span>
+                </div>
+              </td>
+              <td style={styles.thTd}>{order.phone}</td>
+              <td style={{ ...styles.thTd, fontWeight: 700, color: "black" }}>
+                {order.total_amount}
               </td>
             </tr>
           ))}
@@ -136,44 +135,44 @@ export default function Orders() {
     </div>
   );
 }
+
 const styles = {
   container: {
     padding: "20px",
+    fontFamily: "Arial, sans-serif",
   },
   table: {
     width: "100%",
     borderCollapse: "collapse",
     marginTop: "20px",
-  },
-  thTd: {
-    paddingLeft: "40px",
-    paddingRight: "40px",
-    paddingTop: "10px",
-    fontWeight: "normal",
-    textAlign: "left",
-    borderBottom: "1px solid #ddd",
-    gap: 10,
-  },
-  thTdTable: {
-    paddingLeft: "40px",
-    paddingRight: "40px",
-    paddingTop: "10px",
-    textAlign: "left",
-    fontWeight: "bold",
-    borderBottom: "1px solid #ddd",
-    gap: 10,
-    overflow: "hidden",
-    whiteSpace: "nowrap",
-    textOverflow: "ellipsis",
-    maxWidth: "200px",
+    backgroundColor: "#fff",
+    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
   },
   th: {
     backgroundColor: "#f5f5f5",
+    color: "#333",
+    padding: "12px 15px",
+    fontWeight: "bold",
+    textAlign: "left",
+    borderBottom: "2px solid #ddd",
   },
-  img: {
-    width: "40px",
-    height: "40px",
-    borderRadius: "50%",
+  thTdTable: {
+    padding: "12px 15px",
+    textAlign: "left",
+    borderBottom: "1px solid #ddd",
+    maxWidth: "200px",
+    overflow: "hidden",
+    whiteSpace: "nowrap",
+    textOverflow: "ellipsis",
+    fontWeight: "normal",
+    color: "#555",
+  },
+  thTd: {
+    padding: "12px 15px",
+    textAlign: "left",
+    borderBottom: "1px solid #ddd",
+    fontWeight: "normal",
+    color: "#555",
   },
   status: {
     padding: "5px 10px",
@@ -181,48 +180,34 @@ const styles = {
     color: "white",
   },
   completeStatus: {
-    backgroundColor: "#d1e7ff",
-    color: "#007bff",
+    backgroundColor: "#007bff",
+    color: "#fff",
   },
   pendingStatus: {
-    backgroundColor: "yellow",
-    color: "#28a745",
+    backgroundColor: "#ffc107",
+    color: "#fff",
   },
   rejectStatus: {
-    backgroundColor: "#d4edda",
-    color: "#28a745",
+    backgroundColor: "#dc3545",
+    color: "#fff",
   },
   editBtn: {
-    backgroundColor: "blue",
+    backgroundColor: "#007bff",
     color: "white",
     border: "none",
-    padding: "5px 10px",
+    padding: "6px 12px",
     borderRadius: "5px",
     cursor: "pointer",
-    width: 70,
-    height: 40,
+    transition: "background-color 0.3s",
   },
-  editBtnHover: {
-    backgroundColor: "#003CFF",
-  },
-  deletekBtn: {
+  deleteBtn: {
     backgroundColor: "#dc3545",
     color: "white",
     border: "none",
-    padding: "5px 10px",
+    padding: "6px 12px",
     borderRadius: "5px",
     cursor: "pointer",
-    width: 80,
-    height: 40,
-  },
-  deleteBtnHover: {
-    backgroundColor: "#c82333",
-  },
-  blockBtnHover: {
-    backgroundColor: "#c82333",
-  },
-  h3: {
-    fontWeight: "normal",
+    transition: "background-color 0.3s",
   },
   searchInPut: {
     padding: "8px 8px 8px 30px",
@@ -231,8 +216,14 @@ const styles = {
     borderRadius: "20px",
     outline: "none",
     fontSize: "14px",
-    transition: "0.3s",
     marginTop: "10px",
     marginBottom: "30px",
+    border: "1px solid #ddd",
+    transition: "border-color 0.3s",
+  },
+  addressContainer: {
+    display: "flex",
+    flexDirection: "row",
+    gap: "10px",
   },
 };
