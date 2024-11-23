@@ -26,10 +26,10 @@ export default function ProductOptions() {
   // API size
   const fetchSizes = async () => {
     try {
-      const response = await axios.post(
+      const response = await axios.get(
         "http://localhost:5000/v1/api/size/get_all_sizes"
       );
-      setSizes(response.data.metadata.sizes);
+      setSizes(response.data.metadata);
     } catch (error) {
       console.error("Error fetching sizes:", error);
     }
@@ -106,10 +106,10 @@ export default function ProductOptions() {
   // API color
   const fetchColors = async () => {
     try {
-      const response = await axios.post(
+      const response = await axios.get(
         "http://localhost:5000/v1/api/color/get_all_colors"
       );
-      setColors(response.data.metadata.colors);
+      setColors(response.data.metadata);
     } catch (error) {
       console.error("Error fetching colors:", error);
     }

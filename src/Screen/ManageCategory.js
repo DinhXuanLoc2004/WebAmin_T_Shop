@@ -1,364 +1,336 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import ShowProductsContainer from "../component/ShowProductsContainer";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEdit, faTrash, faPlus } from "@fortawesome/free-solid-svg-icons";
-import { height } from "@fortawesome/free-solid-svg-icons/fa0";
-export default function ManageCategory() {
-  // State để theo dõi mục được chọn
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedSubCategory, setSelectedSubCategory] = useState("");
+import AddSubCategoryModal from "../component/AddSubCategoryModal";
+import AddMainCategoryModal from "../component/AddMainCategoryModal";
+import AddChildCategoryModal from "../component/AddChildCategoryModal";
 
-  // Function xử lý khi click vào mục chính
+export default function ManageCategory() {
+  const handleDeleteCategory = async (id_category) => {
+    try {
+      console.log("ID cần xóa:", id_category); // Kiểm tra giá trị id_category
+      await axios.delete(
+        `http://localhost:5000/v1/api/category/delete_category`,
+        {
+          params: { id_category },
+        }
+      );
+
+      // Cập nhật lại danh sách sau khi xóa
+      setMainCategories(
+        mainCategories.filter((category) => category._id !== id_category)
+      );
+      setSubCategories(
+        subCategories.filter((category) => category._id !== id_category)
+      );
+      setChildCategories(
+        childCategories.filter((category) => category._id !== id_category)
+      );
+
+      console.log("Xóa danh mục thành công");
+    } catch (error) {
+      console.error("Lỗi khi xóa danh mục:", error);
+    }
+  };
+
+  //modal add category
+  const [isMainModalOpen, setIsMainModalOpen] = useState(false);
+  const openMainModal = () => setIsMainModalOpen(true);
+  const closeMainModal = () => setIsMainModalOpen(false);
+
+  const [isSubModalOpen, setIsSubModalOpen] = useState(false);
+  const openSubModal = () => setIsSubModalOpen(true);
+  const closeSubModal = () => setIsSubModalOpen(false);
+
+  const [isChildModalOpen, setIsChildModalOpen] = useState(false);
+  const openChildModal = () => setIsChildModalOpen(true);
+  const closeChildModal = () => setIsChildModalOpen(false);
+
+  const [mainCategories, setMainCategories] = useState([]);
+  const [subCategories, setSubCategories] = useState([]);
+  const [childCategories, setChildCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedSubCategory, setSelectedSubCategory] = useState(null);
+  const [selectedChildCategory, setSelectedChildCategory] = useState(null);
+  const [product, setProducts] = useState([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get(
+          "http://localhost:5000/v1/api/category/get_categories/"
+        );
+        const categories = response.data.metadata.categories;
+
+        // Lọc các danh mục có is_delete === false hoặc không có trường is_delete
+        const filteredCategories = categories.filter(
+          (category) =>
+            category.is_delete === false ||
+            !category.hasOwnProperty("is_delete")
+        );
+
+        // Kiểm tra xem có đúng dữ liệu không
+        console.log("Filtered Main Categories:", filteredCategories);
+
+        setMainCategories(filteredCategories);
+      } catch (error) {
+        console.error("Lỗi: ", error);
+      }
+    };
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    if (mainCategories.length > 0) {
+      const parentId1 = mainCategories[0]._id;
+      const fetchSubCategories = async () => {
+        try {
+          const response = await axios.get(
+            `http://localhost:5000/v1/api/category/get_categories/${parentId1}`
+          );
+          const subCategories = response.data.metadata.categories;
+
+          // Lọc các subCategories có is_delete === false hoặc không có trường is_delete
+          const filteredSubCategories = subCategories.filter(
+            (category) =>
+              category.is_delete === false ||
+              !category.hasOwnProperty("is_delete")
+          );
+
+          console.log("Filtered Sub Categories:", filteredSubCategories);
+
+          setSubCategories(filteredSubCategories);
+        } catch (error) {
+          console.error("Lỗi khi lấy sub categories: ", error);
+        }
+      };
+      fetchSubCategories();
+    }
+  }, [mainCategories]);
+
+  useEffect(() => {
+    if (subCategories.length > 0) {
+      const parentId2 = subCategories[0]._id;
+      const fetchChildCategories = async () => {
+        try {
+          const response = await axios.get(
+            `http://192.168.1.51:5000/v1/api/category/get_categories/${parentId2}`
+          );
+          const childCategories = response.data.metadata.categories;
+
+          // Lọc các childCategories có is_delete === false hoặc không có trường is_delete
+          const filteredChildCategories = childCategories.filter(
+            (category) =>
+              category.is_delete === false ||
+              !category.hasOwnProperty("is_delete")
+          );
+
+          console.log("Filtered Child Categories:", filteredChildCategories);
+
+          setChildCategories(filteredChildCategories);
+        } catch (error) {
+          console.error("Lỗi khi lấy child categories: ", error);
+        }
+      };
+      fetchChildCategories();
+    }
+  }, [subCategories]);
+
   const handleCategoryClick = (category) => {
     setSelectedCategory(category);
+    setSubCategories([]);
+    setChildCategories([]);
+    const fetchSubCategories = async () => {
+      try {
+        const response = await axios.get(
+          `http://localhost:5000/v1/api/category/get_categories/${category._id}`
+        );
+        setSubCategories(response.data.metadata.categories);
+      } catch (error) {
+        console.error("Lỗi khi lấy sub categories: ", error);
+      }
+    };
+    fetchSubCategories();
   };
 
-  // Function xử lý khi click vào sub-category
   const handleSubCategoryClick = (subCategory) => {
-    setSelectedSubCategory(subCategory);
-  };
-  const MenClothes = [
-    {
-      id: 1,
-      name: "Tee",
-      price: 20,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-      quantity: 23,
-      brand: "Balenciaga",
-    },
-    {
-      id: 2,
-      name: "Pants",
-      price: 50,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-        quantity: 23,
-      brand: "Balenciaga",
-    },
-  ];
-  const MenShoes = [
-    {
-      id: 1,
-      name: "giay nam",
-      price: 20,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1", // Thay bằng URL ảnh thực tế
-        quantity: 23,
-        brand: "Balenciaga",
-    },
-    {
-      id: 2,
-      name: "giay nam",
-      price: 50,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-        quantity: 23,
-      brand: "Balenciaga",
-    },
-  ];
-  const MenAccessories = [
-    {
-      id: 1,
-      name: "phu kien nam",
-      price: 20,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1", // Thay bằng URL ảnh thực tế
-        quantity: 23,
-      brand: "Balenciaga",
-    },
-    {
-      id: 2,
-      name: "phu kien nam",
-      price: 50,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-      quantity: 23,
-      brand: "Balenciaga",
-    },
-    {
-        id: 3,
-        name: "phu kien nam",
-        price: 50,
-        image:
-          "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-        quantity: 23,
-        brand: "Balenciaga",
-      },
-      {
-        id: 4,
-        name: "phu kien nam",
-        price: 50,
-        image:
-          "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-        quantity: 23,
-        brand: "Balenciaga",
-      },
-      {
-        id: 5,
-        name: "phu kien nam",
-        price: 50,
-        image:
-          "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-        quantity: 23,
-        brand: "Balenciaga",
-      },
-      {
-        id: 6,
-        name: "phu kien nam",
-        price: 50,
-        image:
-          "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-        quantity: 23,
-        brand: "Balenciaga",
-      },
-      {
-        id: 7,
-        name: "phu kien nam",
-        price: 50,
-        image:
-          "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-        quantity: 23,
-        brand: "Balenciaga",
-      },
-  ];
-  const WoMenClothes = [
-    {
-      id: 1,
-      name: "Tee nứ",
-      price: 20,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1", // Thay bằng URL ảnh thực tế
-        quantity: 23,
-      brand: "Balenciaga",
-    },
-    {
-      id: 2,
-      name: "Pants nữ",
-      price: 50,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-      quantity: 23,
-      brand: "Balenciaga",
-    },
-  ];
-  const WoMenShoes = [
-    {
-      id: 1,
-      name: "giay nữ",
-      price: 20,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1", // Thay bằng URL ảnh thực tế
-      quantity: 23,
-      brand: "Balenciaga",
-    },
-    {
-      id: 2,
-      name: "giay nữ",
-      price: 50,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-      quantity: 23,
-      brand: "Balenciaga",
-    },
-  ];
-  const WoMenAccessories = [
-    {
-      id: 1,
-      name: "phu kien nữ",
-      price: 20,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1", // Thay bằng URL ảnh thực tế
-      quantity: 23,
-      brand: "Balenciaga",
-    },
-    {
-      id: 2,
-      name: "phu kien nữ",
-      price: 50,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-      quantity: 23,
-      brand: "Balenciaga",
-    },
-  ];
-  const kidClothes = [
-    {
-      id: 1,
-      name: "Tee nít",
-      price: 20,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1", // Thay bằng URL ảnh thực tế
-      quantity: 23,
-      brand: "Balenciaga",
-    },
-    {
-      id: 2,
-      name: "Pants nít",
-      price: 50,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-      quantity: 23,
-      brand: "Balenciaga",
-    },
-  ];
-  const kidShoes = [
-    {
-      id: 1,
-      name: "giay nít",
-      price: 20,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1", // Thay bằng URL ảnh thực tế
-      quantiy: 23,
-      brand: "Balenciaga",
-    },
-    {
-      id: 2,
-      name: "giay nít",
-      price: 50,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-      quantiy: 23,
-      brand: "Balenciaga",
-    },
-  ];
-  const kidAccessories = [
-    {
-      id: 1,
-      name: "phu kien nít",
-      price: 20,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1", // Thay bằng URL ảnh thực tế
-      quantiy: 23,
-      brand: "Balenciaga",
-    },
-    {
-      id: 2,
-      name: "phu kien nít",
-      price: 50,
-      image:
-        "https://balenciaga.dam.kering.com/m/2158263d98d4979/Small-783399TQVS81083_Y.jpg?v=1",
-      quantiy: 23,
-      brand: "Balenciaga",
-    },
-  ];
-
-  // Hàm chọn sản phẩm dựa trên category và subcategory
-  const getProducts = () => {
-    if (selectedCategory === "Men") {
-      if (selectedSubCategory === "Clothes") {
-        return MenClothes;
-      } else if (selectedSubCategory === "Shoes") {
-        return MenShoes;
-      } else if (selectedSubCategory === "Accessories") {
-        return MenAccessories;
-      }
-    } else if (selectedCategory === "Women") {
-      if (selectedSubCategory === "Clothes") {
-        return WoMenClothes;
-      } else if (selectedSubCategory === "Shoes") {
-        return WoMenShoes;
-      } else if (selectedSubCategory === "Accessories") {
-        return WoMenAccessories;
-      }
-    } else if (selectedCategory === "Kids") {
-      if (selectedSubCategory === "Clothes") {
-        return kidClothes;
-      } else if (selectedSubCategory === "Shoes") {
-        return kidShoes;
-      } else if (selectedSubCategory === "Accessories") {
-        return kidAccessories;
-      }
+    if (!selectedCategory) {
+      return;
     }
-    return [];
+    setSelectedSubCategory(subCategory);
+    setChildCategories([]);
+    const fetchChildCategories = async () => {
+      try {
+        const response = await axios.get(
+          `http://localhost:5000/v1/api/category/get_categories/${subCategory._id}`
+        );
+
+        setChildCategories(response.data.metadata.categories);
+      } catch (error) {
+        console.error("Lỗi khi lấy child categories: ", error);
+      }
+    };
+    fetchChildCategories();
   };
+
+  const handleChildCategoryClick = (childCategory) => {
+    if (!selectedSubCategory) {
+      return;
+    }
+    setSelectedChildCategory(childCategory);
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.post(
+          "http://localhost:5000/v1/api/product/get_all_products"
+        );
+
+        const productsData = response.data?.metadata?.products || [];
+        if (Array.isArray(productsData)) {
+          setProducts(productsData);
+        } else {
+          console.warn("Dữ liệu sản phẩm không hợp lệ:", productsData);
+        }
+      } catch (error) {
+        console.error("Lỗi khi gọi API:", error);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // Lọc sản phẩm theo category con đã chọn
+  const filteredProducts = selectedChildCategory
+    ? product.filter(
+        (prod) => prod.name_category === selectedChildCategory.name_category
+      )
+    : [];
+
   return (
     <div>
+      {/* Navigation Row 1 */}
       <div style={styles.navigationTop}>
-        <div
-          style={
-            selectedCategory === "Men"
-              ? styles.selectedItem
-              : styles.navigationItem
-          }
-          onClick={() => handleCategoryClick("Men")}
-        >
-          Men
-        </div>
-        <div
-          style={
-            selectedCategory === "Women"
-              ? styles.selectedItem
-              : styles.navigationItem
-          }
-          onClick={() => handleCategoryClick("Women")}
-        >
-          Women
-        </div>
-        <div
-          style={
-            selectedCategory === "Kids"
-              ? styles.selectedItem
-              : styles.navigationItem
-          }
-          onClick={() => handleCategoryClick("Kids")}
-        >
-          Kids
-        </div>
-        <FontAwesomeIcon icon={faPlus} style={styles.addButton} />
+        {mainCategories.map((category) => (
+          <div
+            key={category._id}
+            style={
+              selectedCategory?._id === category._id
+                ? styles.selectedItem
+                : styles.navigationItem
+            }
+            onClick={() => handleCategoryClick(category)}
+          >
+            {category.name_category}
+            <FontAwesomeIcon icon={faEdit} style={styles.icon} />
+            <FontAwesomeIcon
+              icon={faTrash}
+              style={styles.icon}
+              onClick={() => handleDeleteCategory(category._id)}
+            />
+          </div>
+        ))}
+        <button onClick={openMainModal} style={styles.addButton}>
+          <FontAwesomeIcon icon={faPlus} />
+        </button>
       </div>
-
+      <AddMainCategoryModal
+        isOpen={isMainModalOpen}
+        style
+        selectedCategory={selectedCategory} // Truyền danh mục đời 1 đã chọn
+        onMainCategoryAdded={(newMainCategory) =>
+          setMainCategories([...mainCategories, newMainCategory])
+        }
+        onRequestClose={closeMainModal}
+      />
       {/* Navigation Row 2 */}
+      {/* Navigation Row 2 */}
+      {selectedCategory && (
+        <div style={styles.navigationBottom}>
+          {subCategories.map((subCategory) => (
+            <div
+              key={subCategory._id}
+              style={
+                selectedSubCategory?._id === subCategory._id
+                  ? styles.selectedItem
+                  : styles.navigationItem
+              }
+              onClick={() => handleSubCategoryClick(subCategory)}
+            >
+              {subCategory.name_category}
+              <FontAwesomeIcon icon={faEdit} style={styles.icon} />
+              <FontAwesomeIcon
+                icon={faTrash}
+                style={styles.icon}
+                onClick={() => handleDeleteCategory(subCategory._id)}
+              />
+            </div>
+          ))}
+          <button onClick={openSubModal} style={styles.addButton}>
+            <FontAwesomeIcon icon={faPlus} />
+          </button>
+        </div>
+      )}
+      <AddSubCategoryModal
+        isOpen={isSubModalOpen}
+        style
+        onRequestClose={closeSubModal}
+        selectedCategory={selectedCategory} // Truyền danh mục đời 1 đã chọn
+        onSubCategoryAdded={(newSubCategory) =>
+          setSubCategories([...subCategories, newSubCategory])
+        }
+      />
+
+      {/* Navigation Row 3 */}
       <div style={styles.navigationBottom}>
-        <div
-          style={
-            selectedSubCategory === "Clothes"
-              ? styles.selectedItem
-              : styles.navigationItem
-          }
-          onClick={() => handleSubCategoryClick("Clothes")}
-        >
-          Clothes
-          <FontAwesomeIcon icon={faEdit} style={styles.icon} />
-          <FontAwesomeIcon icon={faTrash} style={styles.icon} />
-        </div>
-        <div
-          style={
-            selectedSubCategory === "Shoes"
-              ? styles.selectedItem
-              : styles.navigationItem
-          }
-          onClick={() => handleSubCategoryClick("Shoes")}
-        >
-          Shoes
-          <FontAwesomeIcon icon={faEdit} style={styles.icon} />
-          <FontAwesomeIcon icon={faTrash} style={styles.icon} />
-        </div>
-        <div
-          style={
-            selectedSubCategory === "Accessories"
-              ? styles.selectedItem
-              : styles.navigationItem
-          }
-          onClick={() => handleSubCategoryClick("Accessories")}
-        >
-          Accessories
-          <FontAwesomeIcon icon={faEdit} style={styles.icon} />
-          <FontAwesomeIcon icon={faTrash} style={styles.icon} />
-        </div>
+        {childCategories.map((childCategory) => (
+          <div
+            key={childCategory._id}
+            style={
+              selectedChildCategory?._id === childCategory._id
+                ? styles.selectedItem
+                : styles.navigationItem
+            }
+            onClick={() => handleChildCategoryClick(childCategory)}
+          >
+            {childCategory.name_category}
+            <FontAwesomeIcon icon={faEdit} style={styles.icon} />
+            <FontAwesomeIcon
+              icon={faTrash}
+              style={styles.icon}
+              onClick={() => handleDeleteCategory(childCategory._id)}
+            />
+          </div>
+        ))}
+        <button onClick={openChildModal} style={styles.addButton}>
+          <FontAwesomeIcon icon={faPlus} />
+        </button>
       </div>
+      <AddChildCategoryModal
+        isOpen={isChildModalOpen}
+        style
+        onRequestClose={closeChildModal}
+        selectedCategory={selectedCategory}
+        selectedSubCategory={selectedSubCategory}
+        onChildCategoryAdded={(newChildCategory) =>
+          setChildCategories([...childCategories, newChildCategory])
+        }
+      />
 
       {/* Render màn hình tương ứng */}
       <div style={styles.screen}>
         <div style={styles.containerShowProducts}>
-          {getProducts().map((product) => (
+          {/* Chỉ hiển thị sản phẩm nếu đã chọn category con */}
+          {filteredProducts.map((prod) => (
             <ShowProductsContainer
-              key={product.id}
-              image={product.image}
-              name={product.name}
-              price={product.price}
-              quantity={product.quantity}
-              brand={product.brand}
+              key={prod._id} // Sử dụng _id làm key
+              image={prod.thumb}
+              name={prod.name_product}
+              price={prod.price_min} // Hiển thị giá tối thiểu
+              quantity={prod.inventory_quantity}
+              brand={prod.name_brand}
             />
           ))}
         </div>
@@ -366,16 +338,15 @@ export default function ManageCategory() {
     </div>
   );
 }
+
 const styles = {
   navigationTop: {
     display: "flex",
-    // justifyContent: "space-between",
     padding: "10px",
     backgroundColor: "#f5f5f5",
   },
   navigationBottom: {
     display: "flex",
-    // justifyContent: "space-between",
     padding: "10px",
     backgroundColor: "#f5f5f5",
     borderTop: "2px solid red",
@@ -400,6 +371,10 @@ const styles = {
     borderRadius: "20%",
     width: "30px",
     height: "30px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
   },
   screen: {
     marginTop: "20px",
@@ -408,10 +383,10 @@ const styles = {
   },
   containerShowProducts: {
     display: "flex",
-    flexWrap: "wrap", // Để các item tự động xuống dòng khi không đủ chỗ
-    justifyContent: "space-around", // Để căn giữa các item
-    gap: "20px", // Khoảng cách giữa các item
-    width: "70%", //
+    flexWrap: "wrap",
+    justifyContent: "space-around",
+    gap: "20px",
+    width: "70%",
   },
   icon: {
     cursor: "pointer",

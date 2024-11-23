@@ -18,6 +18,7 @@ import DeleteDialog from "../component/DeleteDialog";
 export default function ManageProducts() {
   const [products, setProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [setSelectedProduct1] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
@@ -29,23 +30,29 @@ export default function ManageProducts() {
     brand_id: "",
     product_variants: [],
   });
-  const [isEditProductOpen, setIsEditProductOpen] = useState(false);
-  const [editProductData, setEditProductData] = useState({
-    name_product: "",
-    description: "",
-    images: [],
-    category_id: "",
-    brand_id: "",
-    product_variants: [],
-  });
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false); // State to manage delete dialog visibility
   const [productIdToDelete, setProductIdToDelete] = useState(null);
+
+  const handleEditButtonClick = async (productId) => {
+    try {
+      const response = await axios.get(
+        `http://localhost:5000/v1/api/product/get_product_detail_by_id?product_id=${productId}`
+      );
+      const productDetails = response.data.metadata;
+      setSelectedProduct1(productDetails);
+      console.log(productDetails);
+    } catch (error) {
+      console.error("Error fetching product details:", error);
+      alert("Error fetching product details");
+    }
+  };
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const result = await axios.post(
-          "http://localhost:5000/v1/api/product/get_all_products"
+          "http://localhost:5000/v1/api/product/get_all_products",
+          { is_delete: false }
         );
         setProducts(result.data.metadata.products);
       } catch (error) {
@@ -80,7 +87,8 @@ export default function ManageProducts() {
       );
       // Refresh the product list after deletion
       const result = await axios.post(
-        "http://localhost:5000/v1/api/product/get_all_products"
+        "http://localhost:5000/v1/api/product/get_all_products",
+        { is_delete: false }
       );
       setProducts(result.data.metadata.products);
       setIsDeleteDialogOpen(false); // Close the delete dialog
@@ -120,27 +128,9 @@ export default function ManageProducts() {
     setIsAddProductOpen(true);
   };
 
-  const openEditProductModal = (product) => {
-    setEditProductData(product); // Load the product data into the edit form
-    setIsEditProductOpen(true);
-    console.log(product)
-  };
-
   const closeAddProductModal = () => {
     setIsAddProductOpen(false);
     setNewProductData({
-      name_product: "",
-      description: "",
-      images: [],
-      category_id: "",
-      brand_id: "",
-      product_variants: [],
-    });
-  };
-
-  const closeEditProductModal = () => {
-    setIsEditProductOpen(false);
-    setEditProductData({
       name_product: "",
       description: "",
       images: [],
@@ -166,7 +156,7 @@ export default function ManageProducts() {
         formData.append("images", image);
       });
 
-      const response = await axios.post(
+      await axios.post(
         "http://localhost:5000/v1/api/product/add_product",
         formData,
         {
@@ -176,11 +166,11 @@ export default function ManageProducts() {
         }
       );
 
-      console.log("Product added:", response.data);
       closeAddProductModal();
 
       const result = await axios.post(
-        "http://localhost:5000/v1/api/product/get_all_products"
+        "http://localhost:5000/v1/api/product/get_all_products",
+        { is_delete: false }
       );
       setProducts(result.data.metadata.products);
     } catch (error) {
@@ -188,49 +178,9 @@ export default function ManageProducts() {
     }
   };
 
-  const handleEditProduct = async () => {
-    try {
-      const formData = new FormData();
-      formData.append("name_product", editProductData.name_product);
-      formData.append("description", editProductData.description);
-      formData.append("category_id", editProductData.category_id);
-      formData.append("brand_id", editProductData.brand_id);
-      formData.append(
-        "product_variants",
-        JSON.stringify(editProductData.product_variants)
-      );
-
-      editProductData.images.forEach((image) => {
-        formData.append("images", image);
-      });
-
-      await axios.put(
-        `http://localhost:5000/v1/api/product/update_product?product_id=${editProductData._id}`,
-        formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
-
-      const result = await axios.post(
-        "http://localhost:5000/v1/api/product/get_all_products"
-      );
-      setProducts(result.data.metadata.products);
-
-      closeEditProductModal();
-    } catch (error) {
-      console.error("Error updating product:", error);
-    }
-  };
-
   const handleImageUpload = (event) => {
     setNewProductData({
       ...newProductData,
-      images: Array.from(event.target.files),
-    });
-  };
-
-  const handleEditImageUpload = (event) => {
-    setEditProductData({
-      ...editProductData,
       images: Array.from(event.target.files),
     });
   };
@@ -242,20 +192,6 @@ export default function ManageProducts() {
         ...newProductData.product_variants,
         { quantity: 0, price: 0, size_id: "", image_product_color_id: "" },
       ],
-    });
-  };
-
-  const handleEditVariantChange = (index, field, value) => {
-    const updatedVariants = [...editProductData.product_variants];
-    updatedVariants[index][field] =
-      field === "quantity" || field === "price"
-        ? value === "" || value > 0
-          ? value
-          : updatedVariants[index][field]
-        : value;
-    setEditProductData({
-      ...editProductData,
-      product_variants: updatedVariants,
     });
   };
 
@@ -436,118 +372,6 @@ export default function ManageProducts() {
         </Modal.Footer>
       </Modal>
 
-      <Modal show={isEditProductOpen} onHide={closeEditProductModal} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Edit Product</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <form>
-            <div>
-              <label>Product Name:</label>
-              <input
-                type="text"
-                value={editProductData.name_product}
-                onChange={(e) =>
-                  setEditProductData({
-                    ...editProductData,
-                    name_product: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label>Description:</label>
-              <textarea
-                value={editProductData.description}
-                onChange={(e) =>
-                  setEditProductData({
-                    ...editProductData,
-                    description: e.target.value,
-                  })
-                }
-              ></textarea>
-            </div>
-            <div>
-              <label>Category ID:</label>
-              <input
-                type="text"
-                value={editProductData.category_id}
-                onChange={(e) =>
-                  setEditProductData({
-                    ...editProductData,
-                    category_id: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label>Brand ID:</label>
-              <input
-                type="text"
-                value={editProductData.brand_id}
-                onChange={(e) =>
-                  setEditProductData({
-                    ...editProductData,
-                    brand_id: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label>Images:</label>
-              <input type="file" multiple onChange={handleEditImageUpload} />
-            </div>
-            {/* <div>
-              <label>Product Variants:</label>
-              {editProductData.product_variants.map((variant, index) => (
-                <div key={index}>
-                  <input
-                    type="number"
-                    placeholder="Quantity"
-                    value={variant.quantity}
-                    onChange={(e) =>
-                      handleEditVariantChange(index, "quantity", e.target.value)
-                    }
-                  />
-                  <input
-                    type="number"
-                    placeholder="Price"
-                    value={variant.price}
-                    onChange={(e) =>
-                      handleEditVariantChange(index, "price", e.target.value)
-                    }
-                  />
-                  <input
-                    type="text"
-                    placeholder="Size ID"
-                    value={variant.size_id}
-                    onChange={(e) =>
-                      handleEditVariantChange(index, "size_id", e.target.value)
-                    }
-                  />
-                  <input
-                    type="text"
-                    placeholder="Image Color ID"
-                    value={variant.image_product_color_id}
-                    onChange={(e) =>
-                      handleEditVariantChange(
-                        index,
-                        "image_product_color_id",
-                        e.target.value
-                      )
-                    }
-                  />
-                </div>
-              ))}
-            </div> */}
-          </form>
-        </Modal.Body>
-        <Modal.Footer>
-          <button onClick={handleEditProduct}>Save</button>
-          <button onClick={closeEditProductModal}>Cancel</button>
-        </Modal.Footer>
-      </Modal>
-
       <table style={styles.table}>
         <thead>
           <tr>
@@ -559,9 +383,7 @@ export default function ManageProducts() {
             <th style={styles.thTd}>Rate</th>
             <th style={styles.thTd}>Quantity</th>
             <th style={styles.thTd}>Price</th>
-            <th style={styles.thTd}>Sold</th>
-            <th style={styles.thTd}></th>
-            <th style={styles.thTd}></th>
+            <th style={styles.thTd}>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -589,19 +411,16 @@ export default function ManageProducts() {
               </td>
               <td style={styles.thTdTable}>{product.inventory_quantity}</td>
               <td style={styles.thTdTable}>${product.price_min}</td>
-              <td style={styles.thTdTable}>{product.sold} items</td>
               <td style={styles.thTd}>
                 <button
                   style={styles.editBtn}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openEditProductModal(product);
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    handleEditButtonClick(product._id);
                   }}
                 >
                   <FontAwesomeIcon icon={faEdit} /> Edit
                 </button>
-              </td>
-              <td style={{ borderBottom: "1px solid #ddd" }}>
                 <button
                   style={styles.deleteBtn}
                   onClick={(e) => handleDeleteButtonClick(product._id, e)}
@@ -879,7 +698,8 @@ const styles = {
     borderRadius: "5px",
   },
   editBtn: {
-    backgroundColor: "blue",
+    marginRight: "10px",
+    backgroundColor: "#007bff",
     color: "white",
     border: "none",
     padding: "5px 10px",

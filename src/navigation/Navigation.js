@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React,{useState} from "react";
 import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -7,29 +7,24 @@ import {
   faShirt,
   faShoppingCart,
   faThList,
-  faGear,
+  faRecycle,
 } from "@fortawesome/free-solid-svg-icons";
 import DashBoard from "../Screen/DashBoard";
 import ManageProducts from "../Screen/ManageProducts";
 import ManageUser from "../Screen/ManageUser";
 import Orders from "../Screen/Orders";
-import Setting from "../Screen/Setting";
 import ManageCategory from "../Screen/ManageCategory";
-import EditProduct from "../Screen/EditProduct";
-
-// Component Brand
-const Brand = () => <h2 style={styles.heading}>Brand</h2>;
+import ManageBrand from "../Screen/ManageBrand";
+import RecycleBin from "../Screen/RecycleBin";
 
 export default function Navigation() {
   const [selected, setSelected] = useState("");
-
   const handleSelect = (item) => {
     setSelected(item);
   };
-
   return (
     <div style={styles.container}>
-      <nav style={styles.nav}>
+       <nav style={styles.nav}>
         <ul style={styles.list}>
           <li
             style={{
@@ -178,25 +173,25 @@ export default function Navigation() {
           <li
             style={{
               ...styles.listItem,
-              ...(selected === "setting" && styles.selectedItem),
+              ...(selected === "recycle" && styles.selectedItem),
             }}
           >
             <Link
               style={{
                 ...styles.link,
-                color: selected === "setting" ? "red" : "gray",
+                color: selected === "recycle" ? "red" : "gray",
               }}
-              to="/setting"
-              onClick={() => handleSelect("setting")}
+              to="/recycle"
+              onClick={() => handleSelect("recycle")}
             >
               <FontAwesomeIcon
-                icon={faGear}
+                icon={faRecycle}
                 style={{
                   ...styles.icon,
-                  color: selected === "setting" ? "red" : "gray",
+                  color: selected === "recycle" ? "red" : "gray",
                 }}
               />
-              Setting
+              Recycle Bin
             </Link>
           </li>
         </ul>
@@ -207,10 +202,9 @@ export default function Navigation() {
           <Route path="/order" element={<Orders />} />
           <Route path="/products" element={<ManageProducts />} />
           <Route path="/category" element={<ManageCategory />} />
-          <Route path="/brand" element={<Brand />} />
+          <Route path="/brand" element={<ManageBrand />} />
           <Route path="/user" element={<ManageUser />} />
-          <Route path="/setting" element={<Setting />} />
-          <Route path="/edit" element={<EditProduct />} />
+          <Route path="/recycle" element={<RecycleBin />} />
         </Routes>
       </div>
     </div>
