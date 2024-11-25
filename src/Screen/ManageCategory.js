@@ -39,7 +39,6 @@ export default function ManageCategory() {
   const [isMainModalOpen, setIsMainModalOpen] = useState(false);
   const openMainModal = () => setIsMainModalOpen(true);
   const closeMainModal = () => setIsMainModalOpen(false);
-
   const [isSubModalOpen, setIsSubModalOpen] = useState(false);
   const openSubModal = () => setIsSubModalOpen(true);
   const closeSubModal = () => setIsSubModalOpen(false);
