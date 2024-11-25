@@ -38,7 +38,7 @@ export default function ProductOptions() {
   const handleDeleteSize = async (sizeId) => {
     try {
       await axios.delete(
-        `http://localhost:5000/v1/api/size/delete_size?id=${sizeId}`
+        `http://localhost:5000/v1/api/size/delete_size?_id=${sizeId}`
       );
       setSizes(sizes.filter((size) => size._id !== sizeId));
     } catch (error) {
@@ -79,8 +79,7 @@ export default function ProductOptions() {
     setError("");
 
     try {
-      await axios.put(`http://localhost:5000/v1/api/size/update_size`, {
-        id: editingSizeId,
+      await axios.put(`http://localhost:5000/v1/api/size/update_size?_id=${editingSizeId}`, {
         size: newSize,
       });
       fetchSizes();
@@ -118,7 +117,7 @@ export default function ProductOptions() {
   const handleDeleteColor = async (colorId) => {
     try {
       await axios.delete(
-        `http://localhost:5000/v1/api/color/delete_color?id=${colorId}`
+        `http://localhost:5000/v1/api/color/delete_color?_id=${colorId}`
       );
       fetchColors();
     } catch (error) {
@@ -166,8 +165,7 @@ const handleUpdateColor = async () => {
     setError("");
 
     try {
-        await axios.put(`http://localhost:5000/v1/api/color/update_color`, {
-            id: editingColorId,
+        await axios.put(`http://localhost:5000/v1/api/color/update_color?_id=${editingColorId}`, {
             hex_color: newHexColor,
             name_color: newNameColor,
         });

@@ -2,7 +2,11 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { format } from "date-fns";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faLocationDot, faCoins, faCalendarDays } from "@fortawesome/free-solid-svg-icons";
+import {
+  faLocationDot,
+  faCoins,
+  faCalendarDays,
+} from "@fortawesome/free-solid-svg-icons";
 import Select from "react-select";
 
 export default function Orders() {
@@ -71,7 +75,7 @@ export default function Orders() {
       const response = await axios.get(
         `http://localhost:5000/v1/api/shipping_address/get_districts?province_id=${selectedOption.value}`
       );
-      console.log(selectedOption.value)
+      console.log(selectedOption.value);
       setDistricts(
         response.data.metadata.map((district) => ({
           value: district.DistrictID,
@@ -105,7 +109,7 @@ export default function Orders() {
       const response = await axios.get(
         `http://localhost:5000/v1/api/shipping_address/get_wards?district_id=${selectedOption.value}`
       );
-      console.log(selectedOption.value)
+      console.log(selectedOption.value);
       setWards(
         response.data.metadata.map((ward) => ({
           value: ward.WardCode,
@@ -123,6 +127,7 @@ export default function Orders() {
         const response = await axios.get(
           "http://localhost:5000/v1/api/order/get_all_orders"
         );
+        console.log(response.data.metadata);
         setOrders(response.data.metadata);
       } catch (error) {
         console.error("Error fetching orders:", error);
@@ -233,22 +238,25 @@ export default function Orders() {
 
   const handleUpdateStatus = async () => {
     if (!currentOrder) return;
-  
+
     const { _id: order_id, order_status: currentStatus } = currentOrder;
     const nextStatus = nextStatusMap[currentStatus];
-  
+
     if (!nextStatus) {
       console.log("No next status available for this order.");
       return;
     }
-  
+
     try {
       // Gửi yêu cầu cập nhật trạng thái đến server
-      await axios.put("http://localhost:5000/v1/api/order/update_status_order", {
-        order_id,
-        status: nextStatus,
-      });
-  
+      await axios.put(
+        "http://localhost:5000/v1/api/order/update_status_order",
+        {
+          order_id,
+          status: nextStatus,
+        }
+      );
+
       // Cập nhật trạng thái trong danh sách đơn hàng
       setOrders((prevOrders) =>
         prevOrders.map((order) =>
@@ -257,7 +265,7 @@ export default function Orders() {
             : order
         )
       );
-  
+
       handleCloseModal();
     } catch (error) {
       console.error("Error updating status order:", error);
@@ -301,17 +309,21 @@ export default function Orders() {
                 <td style={styles.thTdTable}>{order.full_name}</td>
                 <td style={styles.thTdTable}>{order.phone}</td>
                 <td style={styles.thTdTable}>
-                  {formatDateTime(order.createdAt)}
+                  {formatDateTime(order.order_date)}
                 </td>
                 <td style={styles.thTdTable}>
                   {formatDateTime(order.leadtime, false)}
                 </td>
                 <td style={styles.thTdTable}>${order.total_amount}</td>
                 <td style={styles.thTdTable}>
-                  <button
+                  <select
                     style={{
                       backgroundColor: statusColors[order.order_status],
                       color: "white",
+                      border: "none",
+                      borderRadius: "4px",
+                      padding: "5px 10px",
+                      width: "75%",
                       cursor: [
                         "Delivery Failed",
                         "Canceled",
@@ -319,25 +331,32 @@ export default function Orders() {
                       ].includes(order.order_status)
                         ? "not-allowed"
                         : "pointer",
-                      border: "none",
-                      borderRadius: "4px",
-                      padding: "5px 10px",
-                      width: "60%",
                     }}
+                    value={order.order_status}
                     disabled={[
                       "Delivery Failed",
                       "Canceled",
                       "Unpaid",
-                    ].includes(order.order_status)}
-                    onClick={(e) => {
-                      e.stopPropagation();
+                    ].includes(order.order_status)} // Không cho phép chọn nếu trạng thái không tịnh tiến
+                    onChange={(e) => {
+                      const nextStatus = e.target.value;
                       setCurrentOrder(order); // Lưu thông tin order hiện tại
-                      handleUpdateStatus(); // Gọi hàm cập nhật
+                      handleUpdateStatus(nextStatus); // Gọi hàm cập nhật
                     }}
                   >
-                    {order.order_status}
-                  </button>
+                    <option value={order.order_status} disabled>
+                      {order.order_status}
+                    </option>
+                    {Object.keys(nextStatusMap).includes(
+                      order.order_status
+                    ) && (
+                      <option value={nextStatusMap[order.order_status]}>
+                        {nextStatusMap[order.order_status]}
+                      </option>
+                    )}
+                  </select>
                 </td>
+
                 <td style={styles.thTdTable}>
                   {order.order_status === "Delivering" && (
                     <button
@@ -549,7 +568,14 @@ export default function Orders() {
                 }
               />
             </div>
-            <button style={{...styles.modalButton, background: "blue", color: "white"}} onClick={handleUpdateLocation}>
+            <button
+              style={{
+                ...styles.modalButton,
+                background: "blue",
+                color: "white",
+              }}
+              onClick={handleUpdateLocation}
+            >
               Save
             </button>
             <button style={styles.modalButton} onClick={handleCloseModal}>
