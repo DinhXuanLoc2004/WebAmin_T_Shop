@@ -21,8 +21,8 @@ const ShowProductsContainer = ({ image, name, price, quantity, brand }) => {
       </div>
 
       <div style={{ flexDirection: "row", marginTop: 10 }}>
-        <FontAwesomeIcon icon={faEdit} style={styles.icon} />
-        <FontAwesomeIcon icon={faTrash} style={styles.icon} />
+        {/* <FontAwesomeIcon icon={faEdit} style={styles.icon} />
+        <FontAwesomeIcon icon={faTrash} style={styles.icon} /> */}
       </div>
     </div>
   );

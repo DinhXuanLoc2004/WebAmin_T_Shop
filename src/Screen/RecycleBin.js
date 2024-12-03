@@ -18,30 +18,30 @@ const RecycleBin = () => {
         // Fetch deleted products
         const productResult = await axios.post(
           "http://localhost:5000/v1/api/product/get_all_products",
-          { is_delete: true }
+          { "is_delete": true}
         );
         setProducts(productResult.data.metadata.products);
 
         // Fetch deleted brands
-        const brandResult = await axios.post(
-          "http://localhost:5000/v1/api/brand/get_all_brands",
-          { is_delete: true }
+        const brandResult = await axios.get(
+          "http://localhost:5000/v1/api/brand/get_all_brands"
         );
-        setBrands(brandResult.data.metadata.brands);
+        setBrands(brandResult.data.brands);
+        console.log(brandResult.data.brands)
 
         // Fetch deleted categories
-        const categoryResult = await axios.post(
-          "http://localhost:5000/v1/api/category/get_all_categories",
-          { is_delete: true }
+        const categoryResult = await axios.get(
+          "http://localhost:5000/v1/api/category/get_all_categories"
         );
         setCategories(categoryResult.data.metadata.categories);
+        console.log(categoryResult.data.metadata.categories)
 
-        // Fetch deleted colors and sizes
-        const colorSizeResult = await axios.post(
-          "http://localhost:5000/v1/api/color_size/get_all_color_sizes",
-          { is_delete: true }
-        );
-        setColorAndSizes(colorSizeResult.data.metadata.color_sizes);
+        // // Fetch deleted colors and sizes
+        // const colorSizeResult = await axios.post(
+        //   "http://localhost:5000/v1/api/color_size/get_all_color_sizes",
+        //   { is_delete: true }
+        // );
+        // setColorAndSizes(colorSizeResult.data.metadata.color_sizes);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -142,37 +142,71 @@ const RecycleBin = () => {
         {/* Brands Tab */}
         <TabPanel>
           <h2 style={styles.tabTitle}>Brands</h2>
-          <ul style={styles.list}>
-            {brands.map((brand, index) => (
-              <li key={index} style={styles.listItem}>
-                {brand.name} -{" "}
-                <button
-                  style={styles.restoreBtn}
-                  onClick={() => handleRestoreProduct(brand._id)}
-                >
-                  Restore
-                </button>
-              </li>
-            ))}
-          </ul>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.thTd}>STT</th>
+                <th style={styles.thTd}>Image</th>
+                <th style={styles.thTd}>Name</th>
+                <th style={styles.thTd}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {brands.map((brand, index) => (
+                <tr key={index} style={styles.tr}>
+                  <td style={styles.thTdTable}>{index + 1}</td>
+                  <td style={styles.thTd}>
+                    <img src={brand.image_brand.url} alt="Product" style={styles.img} />
+                  </td>
+                  <td style={styles.thTdTable}>{brand.name_brand}</td>
+                  <td style={styles.thTdTable}>
+                    <button
+                      style={styles.restoreBtn}
+                      onClick={() => handleRestoreProduct()}
+                    >
+                      <FontAwesomeIcon icon={faTrashRestore} /> Restore
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </TabPanel>
 
         {/* Categories Tab */}
         <TabPanel>
           <h2 style={styles.tabTitle}>Categories</h2>
-          <ul style={styles.list}>
-            {categories.map((category, index) => (
-              <li key={index} style={styles.listItem}>
-                {category.name} -{" "}
-                <button
-                  style={styles.restoreBtn}
-                  onClick={() => handleRestoreProduct(category._id)}
-                >
-                  Restore
-                </button>
-              </li>
-            ))}
-          </ul>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.thTd}>STT</th>
+                <th style={styles.thTd}>Image</th>
+                <th style={styles.thTd}>Name</th>
+                <th style={styles.thTd}>Depth</th>
+                <th style={styles.thTd}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {categories.map((category, index) => (
+                <tr key={index} style={styles.tr}>
+                  <td style={styles.thTdTable}>{index + 1}</td>
+                  <td style={styles.thTd}>
+                    <img src={category.image_category.url} alt="Product" style={styles.img} />
+                  </td>
+                  <td style={styles.thTdTable}>{category.name_category}</td>
+                  <td style={styles.thTdTable}>{category.depth}</td>
+                  <td style={styles.thTdTable}>
+                    <button
+                      style={styles.restoreBtn}
+                      onClick={() => handleRestoreProduct()}
+                    >
+                      <FontAwesomeIcon icon={faTrashRestore} /> Restore
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </TabPanel>
 
         {/* Color and Size Tab */}

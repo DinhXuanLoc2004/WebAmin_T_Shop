@@ -18,7 +18,7 @@ import DeleteDialog from "../component/DeleteDialog";
 export default function ManageProducts() {
   const [products, setProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [setSelectedProduct1] = useState(null);
+  const [selectedProduct1, setSelectedProduct1] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
@@ -30,7 +30,7 @@ export default function ManageProducts() {
     brand_id: "",
     product_variants: [],
   });
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false); // State to manage delete dialog visibility
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [productIdToDelete, setProductIdToDelete] = useState(null);
 
   const handleEditButtonClick = async (productId) => {
@@ -190,7 +190,7 @@ export default function ManageProducts() {
       ...newProductData,
       product_variants: [
         ...newProductData.product_variants,
-        { quantity: 0, price: 0, size_id: "", image_product_color_id: "" },
+        { quantity: "", price: "", size_id: "", image_product_color_id: "" },
       ],
     });
   };
@@ -298,26 +298,6 @@ export default function ManageProducts() {
                 {newProductData.product_variants.map((variant, index) => (
                   <div key={index} style={{ marginBottom: "10px" }}>
                     <input
-                      type="number"
-                      placeholder="Enter quantity"
-                      value={variant.quantity}
-                      onChange={(e) =>
-                        handleVariantChange(index, "quantity", e.target.value)
-                      }
-                      style={styles.input}
-                      min="1" // Ensure only positive numbers
-                    />
-                    <input
-                      type="number"
-                      placeholder="Enter price"
-                      value={variant.price}
-                      onChange={(e) =>
-                        handleVariantChange(index, "price", e.target.value)
-                      }
-                      style={styles.input}
-                      min="0.01" // Ensure only positive numbers, with a minimum of 0.01
-                    />
-                    <input
                       type="text"
                       placeholder="Size ID"
                       value={variant.size_id}
@@ -338,6 +318,26 @@ export default function ManageProducts() {
                         )
                       }
                       style={styles.input}
+                    />
+                    <input
+                      type="number"
+                      placeholder="Enter quantity"
+                      value={variant.quantity}
+                      onChange={(e) =>
+                        handleVariantChange(index, "quantity", e.target.value)
+                      }
+                      style={styles.input}
+                      min="1" // Ensure only positive numbers
+                    />
+                    <input
+                      type="number"
+                      placeholder="Enter price"
+                      value={variant.price}
+                      onChange={(e) =>
+                        handleVariantChange(index, "price", e.target.value)
+                      }
+                      style={styles.input}
+                      min="0.01" // Ensure only positive numbers, with a minimum of 0.01
                     />
                     <div>
                       {newProductData.product_variants.length >= 2 && (

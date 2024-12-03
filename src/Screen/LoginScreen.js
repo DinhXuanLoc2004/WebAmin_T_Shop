@@ -1,18 +1,31 @@
 import React, { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
+import axiosInstance from "../helper/axiosIntercreptor";
 import { faEnvelope, faKey } from "@fortawesome/free-solid-svg-icons";
-
 export default function LoginScreen({ onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const navigate = useNavigate();
-
-  const handleLogin = () => {
-    onLogin(); // Gọi hàm onLogin từ props
-    navigate('/dashboard'); // Chuyển đến dashboard
+  const handleLogin = async () => {
+    try {
+      const response = await axiosInstance.post("/admin/login_admin", {
+        email: email,
+        password: password,
+      });
+      if (response.data.status === 200) {
+        onLogin();
+        navigate("/dashboard");
+        alert("Login successful!");
+      } else {
+        setError("Invalid email or password!");
+      }
+    } catch (error) {
+      setError("Something went wrong. Please try again!");
+      console.error(error);
+    }
   };
-
   return (
     <div style={styles.gradientStyle}>
       <div style={styles.container}>
@@ -43,6 +56,12 @@ export default function LoginScreen({ onLogin }) {
             />
           </div>
         </div>
+        {error && (
+          <div style={{ color: "red", marginTop: "10px", textAlign: "center" }}>
+            {error}
+          </div>
+        )}
+
         <div style={styles.optionText}>
           <div style={{ flex: "row" }}>
             <input
@@ -54,6 +73,7 @@ export default function LoginScreen({ onLogin }) {
           </div>
           <span style={{ color: "red", marginRight: 80 }}>Forget Password</span>
         </div>
+
         <button style={styles.button} title="Login" onClick={handleLogin}>
           <span style={styles.buttonText}>Login</span>
         </button>
@@ -62,18 +82,15 @@ export default function LoginScreen({ onLogin }) {
   );
 }
 
-// Styles remain unchanged
-
-
 const styles = {
   gradientStyle: {
-    background: "linear-gradient(to bottom, red, white)", // Chuyển màu từ đỏ sang trắng
+    background: "linear-gradient(to bottom, red, white)",
     width: "100%",
     height: "100vh",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    color: "#000", // Màu chữ
+    color: "#000", 
     fontSize: "24px",
   },
   container: {
@@ -127,9 +144,8 @@ const styles = {
     color: "#000",
     paddingLeft: "20px",
     marginTop: "10px",
-    border: "none", // This removes the border
+    border: "none",
     outline: "none",
-    fontSize: "25px",
     fontWeight: "bold",
   },
   icon: {

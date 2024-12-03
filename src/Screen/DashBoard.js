@@ -15,13 +15,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  defs,
-  linearGradient,
 } from "recharts";
-
-import { color } from "chart.js/helpers";
-import axios from "axios";
-import ShowProductsContainer from "../component/ShowProductsContainer";
+import axiosInstance from "../helper/axiosIntercreptor";
 const DashboardContainer = styled.div`
   width: 100%;
   padding: 20px;
@@ -80,15 +75,12 @@ export default function DashBoard() {
   ];
 
   const dashBoardData = { user: 182, order: 400, sales: 31.109, pending: 48 };
-  // api san pham nhiei ng mua
+  
   const [products, setProducts] = useState([]);
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.post(
-          "http://localhost:5000/v1/api/product/get_all_products"
-        );
-
+        const response = await axiosInstance.post("/product/get_all_products");
         const productsData = response.data?.metadata?.products || [];
         if (Array.isArray(productsData)) {
           setProducts(productsData);
@@ -105,7 +97,6 @@ export default function DashBoard() {
     { id: 1, name: "Nguyễn Văn A", purchaseCount: 15 },
     { id: 2, name: "Trần Thị B", purchaseCount: 12 },
     { id: 3, name: "Lê Văn C", purchaseCount: 10 },
-    // Thêm các khách hàng khác
   ];
 
   return (

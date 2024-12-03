@@ -1,0 +1,18 @@
+.spinner {
+    border: 4px solid #f3f3f3; /* Màu nền của spinner */
+    border-top: 4px solid #3498db; /* Màu của vòng xoay */
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite; /* Hiệu ứng xoay */
+  }
+  
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  

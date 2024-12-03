@@ -195,9 +195,9 @@ export default function Orders() {
   };
 
   const nextStatusMap = {
-    Confirming: "Confirmed",
-    Confirmed: "Delivering",
-    Delivering: "Delivered Successfully",
+    Confirming: ["Confirmed"],
+    Confirmed: ["Delivering"],
+    Delivering: ["Delivered Successfully", "Delivery Failed"],
   };
 
   const handleUpdateLocation = async () => {
@@ -236,17 +236,16 @@ export default function Orders() {
     }
   };
 
-  const handleUpdateStatus = async () => {
+  const handleUpdateStatus = async (nextStatus) => {
     if (!currentOrder) return;
-
-    const { _id: order_id, order_status: currentStatus } = currentOrder;
-    const nextStatus = nextStatusMap[currentStatus];
-
+  
+    const { _id: order_id } = currentOrder;
+  
     if (!nextStatus) {
       console.log("No next status available for this order.");
       return;
     }
-
+  
     try {
       // Gửi yêu cầu cập nhật trạng thái đến server
       await axios.put(
@@ -256,7 +255,7 @@ export default function Orders() {
           status: nextStatus,
         }
       );
-
+  
       // Cập nhật trạng thái trong danh sách đơn hàng
       setOrders((prevOrders) =>
         prevOrders.map((order) =>
@@ -265,12 +264,13 @@ export default function Orders() {
             : order
         )
       );
-
+  
       handleCloseModal();
     } catch (error) {
       console.error("Error updating status order:", error);
     }
   };
+  
 
   return (
     <div style={styles.container}>
@@ -295,6 +295,7 @@ export default function Orders() {
               <th style={{ ...styles.thTd, ...styles.th }}>Total Amount</th>
               <th style={{ ...styles.thTd, ...styles.th }}>Status</th>
               <th style={{ ...styles.thTd, ...styles.th }}>Actions</th>
+              <th style={{ ...styles.thTd, ...styles.th }}>Note </th>
               {/* Cột Status */}
             </tr>
           </thead>
@@ -316,45 +317,39 @@ export default function Orders() {
                 </td>
                 <td style={styles.thTdTable}>${order.total_amount}</td>
                 <td style={styles.thTdTable}>
-                  <select
-                    style={{
-                      backgroundColor: statusColors[order.order_status],
-                      color: "white",
-                      border: "none",
-                      borderRadius: "4px",
-                      padding: "5px 10px",
-                      width: "75%",
-                      cursor: [
-                        "Delivery Failed",
-                        "Canceled",
-                        "Unpaid",
-                      ].includes(order.order_status)
-                        ? "not-allowed"
-                        : "pointer",
-                    }}
-                    value={order.order_status}
-                    disabled={[
-                      "Delivery Failed",
-                      "Canceled",
-                      "Unpaid",
-                    ].includes(order.order_status)} // Không cho phép chọn nếu trạng thái không tịnh tiến
-                    onChange={(e) => {
-                      const nextStatus = e.target.value;
-                      setCurrentOrder(order); // Lưu thông tin order hiện tại
-                      handleUpdateStatus(nextStatus); // Gọi hàm cập nhật
-                    }}
-                  >
-                    <option value={order.order_status} disabled>
-                      {order.order_status}
-                    </option>
-                    {Object.keys(nextStatusMap).includes(
-                      order.order_status
-                    ) && (
-                      <option value={nextStatusMap[order.order_status]}>
-                        {nextStatusMap[order.order_status]}
-                      </option>
-                    )}
-                  </select>
+                <select
+  style={{
+    backgroundColor: statusColors[order.order_status],
+    color: "white",
+    border: "none",
+    borderRadius: "4px",
+    padding: "5px 10px",
+    width: "75%",
+    cursor: ["Delivery Failed", "Canceled", "Unpaid"].includes(order.order_status)
+      ? "not-allowed"
+      : "pointer",
+  }}
+  value={order.order_status}
+  disabled={["Delivery Failed", "Canceled", "Unpaid"].includes(order.order_status)} // Không cho phép chọn nếu trạng thái không tịnh tiến
+  onChange={(e) => {
+    const nextStatus = e.target.value;
+    setCurrentOrder(order); // Lưu thông tin order hiện tại
+    handleUpdateStatus(nextStatus); // Gọi hàm cập nhật
+  }}
+  onClick={(e) => {
+    e.stopPropagation();
+  }}
+>
+  <option value={order.order_status} disabled>
+    {order.order_status}
+  </option>
+  {nextStatusMap[order.order_status]?.map((status) => (
+    <option key={status} value={status}>
+      {status}
+    </option>
+  ))}
+</select>
+
                 </td>
 
                 <td style={styles.thTdTable}>
@@ -377,6 +372,8 @@ export default function Orders() {
                     </button>
                   )}
                 </td>
+
+                <td style={styles.thTdTable}>{order.cancellation_reason}</td>
               </tr>
             ))}
           </tbody>

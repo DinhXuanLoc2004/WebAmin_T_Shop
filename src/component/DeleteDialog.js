@@ -4,6 +4,7 @@ import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import Modal from "@mui/material/Modal";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import { BorderColor } from "@mui/icons-material";
 
 export default function DeleteDialog({ open, onClose, onConfirm }) {
   const style = {
@@ -12,25 +13,29 @@ export default function DeleteDialog({ open, onClose, onConfirm }) {
       top: "50%",
       left: "50%",
       transform: "translate(-50%, -50%)",
-      width: 400,
       backgroundColor: "#F2F4FC", // Đặt nền trắng cho Box
       borderRadius: "10px",
       padding: "20px",
       boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.1)",
-      height: "160px",
-      width: "280px",
+      height: "200px",
+      width: "380px",
+      border: "2px solid black",
     },
     title: {
-      size: "18px",
+      size: "25px",
+      fontSize: "25px",
       color: "#0F61AC",
       fontWeight: "bold",
     },
     icon: {
-      size: "18px",
-      color: "#0F61AC",
+      size: "20px",
+
+      color: "#0F61AC", 
     },
     description: {
-      size: "16px",
+      size: "25px",
+      fontSize: "25px",
+
       color: "black",
       marginLeft: "23px",
     },

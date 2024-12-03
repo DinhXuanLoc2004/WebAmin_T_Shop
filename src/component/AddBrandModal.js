@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import axios from "axios";
-
 const AddBrandModal = ({ isOpen, onClose, onAddBrand }) => {
   const [name_brand, setName_brand] = useState("");
   const [image_brand, setImage_brand] = useState(null);
