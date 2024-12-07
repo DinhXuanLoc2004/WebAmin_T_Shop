@@ -8,25 +8,99 @@ import AddMainCategoryModal from "../component/AddMainCategoryModal";
 import AddChildCategoryModal from "../component/AddChildCategoryModal";
 
 export default function ManageCategory() {
-  const handleDeleteCategory = async (id_category) => {
+  //eidt
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [categoryToUpdate, setCategoryToUpdate] = useState(null);
+  const [nameCategory, setNameCategory] = useState("");
+  const [parentId, setParentId] = useState("");
+  const [image, setImage] = useState("");
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get(
+          "http://localhost:5000/v1/api/category/get_categories?is_delete=false"
+        );
+        setMainCategories(response.data.metadata.categories);
+      } catch (error) {
+        console.error("Error fetching categories", error);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  // Open and close the update modalmon
+  const openUpdateModal = (category) => {
+    setCategoryToUpdate(category);
+    setNameCategory(category.name_category);
+    setParentId(category.parent_id || "");
+    setImage(category.image || "");
+    setIsUpdateModalOpen(true);
+  };
+  const closeUpdateModal = () => {
+    setIsUpdateModalOpen(false);
+    setCategoryToUpdate(null);
+  };
+  const handleUpdateCategory = async () => {
     try {
-      console.log("ID cần xóa:", id_category); // Kiểm tra giá trị id_category
-      await axios.delete(
-        `http://localhost:5000/v1/api/category/delete_category`,
+      const formData = new FormData();
+      // Thêm các trường dữ liệu vào FormData
+      formData.append("name_category", nameCategory);
+      if (parentId) {
+        formData.append("parent_id", parentId);
+      }
+
+      // Kiểm tra nếu `image` là file, thêm nó vào FormData
+      if (image instanceof File) {
+        formData.append("image", image);
+      }
+
+      // Gửi request bằng Axios
+      await axios.put(
+        `http://localhost:5000/v1/api/category/update_category?_id=${categoryToUpdate._id}`,
+        formData,
         {
-          params: { id_category },
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      // Cập nhật danh sách danh mục
+      setMainCategories((prevCategories) =>
+        prevCategories.map((cat) =>
+          cat._id === categoryToUpdate._id
+            ? { ...cat, name_category: nameCategory, parent_id: parentId }
+            : cat
+        )
+      );
+
+      closeUpdateModal();
+    } catch (error) {
+      console.error("Error updating category", error);
+    }
+  };
+
+  //delete
+  const handleDeleteCategory = async (_id) => {
+    try {
+      console.log("ID cần xóa:", _id); // Kiểm tra giá trị id_category
+      await axios.delete(
+        `http://localhost:5000/v1/api/category/toggle_delete_category`,
+        {
+          params: { _id },
         }
       );
 
       // Cập nhật lại danh sách sau khi xóa
       setMainCategories(
-        mainCategories.filter((category) => category._id !== id_category)
+        mainCategories.filter((category) => category._id !== _id)
       );
       setSubCategories(
-        subCategories.filter((category) => category._id !== id_category)
+        subCategories.filter((category) => category._id !== _id)
       );
       setChildCategories(
-        childCategories.filter((category) => category._id !== id_category)
+        childCategories.filter((category) => category._id !== _id)
       );
 
       console.log("Xóa danh mục thành công");
@@ -38,7 +112,9 @@ export default function ManageCategory() {
   //modal add category
   const [isMainModalOpen, setIsMainModalOpen] = useState(false);
   const openMainModal = () => setIsMainModalOpen(true);
-  const closeMainModal = () => setIsMainModalOpen(false);
+  const closeMainModal = () => {
+    setIsMainModalOpen(false);
+  };
   const [isSubModalOpen, setIsSubModalOpen] = useState(false);
   const openSubModal = () => setIsSubModalOpen(true);
   const closeSubModal = () => setIsSubModalOpen(false);
@@ -55,130 +131,86 @@ export default function ManageCategory() {
   const [selectedChildCategory, setSelectedChildCategory] = useState(null);
   const [product, setProducts] = useState([]);
 
+  // Fetch Main Categories
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchMainCategories = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:5000/v1/api/category/get_categories/"
+          "http://localhost:5000/v1/api/category/get_categories?is_delete=false"
         );
-        const categories = response.data.metadata.categories;
-
-        // Lọc các danh mục có is_delete === false hoặc không có trường is_delete
-        const filteredCategories = categories.filter(
-          (category) =>
-            category.is_delete === false ||
-            !category.hasOwnProperty("is_delete")
-        );
-
-        // Kiểm tra xem có đúng dữ liệu không
-        console.log("Filtered Main Categories:", filteredCategories);
-
-        setMainCategories(filteredCategories);
+        setMainCategories(response.data.metadata.categories || []);
       } catch (error) {
-        console.error("Lỗi: ", error);
+        console.error("Lỗi khi lấy main categories: ", error);
       }
     };
-    fetchData();
+
+    const interval = setInterval(() => {
+      fetchMainCategories();
+    }, 5000); // Cập nhật mỗi 5 giây
+
+    // Dọn dẹp interval khi component bị hủy
+    return () => clearInterval(interval);
   }, []);
 
+  // Fetch Sub Categories khi Main Categories thay đổi
+  // Tự động tải danh mục con khi danh mục cha thay đổi
   useEffect(() => {
-    if (mainCategories.length > 0) {
-      const parentId1 = mainCategories[0]._id;
-      const fetchSubCategories = async () => {
-        try {
-          const response = await axios.get(
-            `http://localhost:5000/v1/api/category/get_categories/${parentId1}`
-          );
-          const subCategories = response.data.metadata.categories;
-
-          // Lọc các subCategories có is_delete === false hoặc không có trường is_delete
-          const filteredSubCategories = subCategories.filter(
-            (category) =>
-              category.is_delete === false ||
-              !category.hasOwnProperty("is_delete")
-          );
-
-          console.log("Filtered Sub Categories:", filteredSubCategories);
-
-          setSubCategories(filteredSubCategories);
-        } catch (error) {
-          console.error("Lỗi khi lấy sub categories: ", error);
-        }
-      };
-      fetchSubCategories();
+    if (!selectedCategory?._id) {
+      setSubCategories([]); // Xóa subcategories nếu không có danh mục cha
+      return;
     }
-  }, [mainCategories]);
 
-  useEffect(() => {
-    if (subCategories.length > 0) {
-      const parentId2 = subCategories[0]._id;
-      const fetchChildCategories = async () => {
-        try {
-          const response = await axios.get(
-            `http://192.168.1.51:5000/v1/api/category/get_categories/${parentId2}`
-          );
-          const childCategories = response.data.metadata.categories;
-
-          // Lọc các childCategories có is_delete === false hoặc không có trường is_delete
-          const filteredChildCategories = childCategories.filter(
-            (category) =>
-              category.is_delete === false ||
-              !category.hasOwnProperty("is_delete")
-          );
-
-          console.log("Filtered Child Categories:", filteredChildCategories);
-
-          setChildCategories(filteredChildCategories);
-        } catch (error) {
-          console.error("Lỗi khi lấy child categories: ", error);
-        }
-      };
-      fetchChildCategories();
-    }
-  }, [subCategories]);
-
-  const handleCategoryClick = (category) => {
-    setSelectedCategory(category);
-    setSubCategories([]);
-    setChildCategories([]);
     const fetchSubCategories = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:5000/v1/api/category/get_categories/${category._id}`
+          `http://localhost:5000/v1/api/category/get_categories?parent_id=${selectedCategory._id}&is_delete=false`
         );
-        setSubCategories(response.data.metadata.categories);
+        setSubCategories(response.data.metadata.categories || []);
       } catch (error) {
         console.error("Lỗi khi lấy sub categories: ", error);
       }
     };
-    fetchSubCategories();
-  };
 
-  const handleSubCategoryClick = (subCategory) => {
-    if (!selectedCategory) {
+    fetchSubCategories();
+  }, [selectedCategory]);
+
+  // Tự động tải danh mục cháu khi danh mục con thay đổi
+  useEffect(() => {
+    if (!selectedSubCategory?._id) {
+      setChildCategories([]); // Xóa childCategories nếu không có danh mục con
       return;
     }
-    setSelectedSubCategory(subCategory);
-    setChildCategories([]);
+
     const fetchChildCategories = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:5000/v1/api/category/get_categories/${subCategory._id}`
+          `http://localhost:5000/v1/api/category/get_categories?parent_id=${selectedSubCategory._id}&is_delete=false`
         );
-
-        setChildCategories(response.data.metadata.categories);
+        setChildCategories(response.data.metadata.categories || []);
       } catch (error) {
         console.error("Lỗi khi lấy child categories: ", error);
       }
     };
+
     fetchChildCategories();
+  }, [selectedSubCategory]);
+
+  // Hàm xử lý khi click vào danh mục cha
+  const handleCategoryClick = (category) => {
+    setSelectedCategory(category); // Chọn danh mục cha
+    setSelectedSubCategory(null); // Reset danh mục con
+    setSelectedChildCategory(null); // Reset danh mục cháu
   };
 
+  // Hàm xử lý khi click vào danh mục con
+  const handleSubCategoryClick = (subCategory) => {
+    setSelectedSubCategory(subCategory); // Chọn danh mục con
+    setSelectedChildCategory(null); // Reset danh mục cháu
+  };
+
+  // Hàm xử lý khi click vào danh mục cháu
   const handleChildCategoryClick = (childCategory) => {
-    if (!selectedSubCategory) {
-      return;
-    }
-    setSelectedChildCategory(childCategory);
+    setSelectedChildCategory(childCategory); // Chọn danh mục cháu
   };
 
   useEffect(() => {
@@ -215,6 +247,7 @@ export default function ManageCategory() {
         {mainCategories.map((category) => (
           <div
             key={category._id}
+            className={selectedCategory?._id === category._id ? "active" : ""}
             style={
               selectedCategory?._id === category._id
                 ? styles.selectedItem
@@ -223,12 +256,18 @@ export default function ManageCategory() {
             onClick={() => handleCategoryClick(category)}
           >
             {category.name_category}
-            <FontAwesomeIcon icon={faEdit} style={styles.icon} />
             <FontAwesomeIcon
-              icon={faTrash}
+              icon={faEdit}
               style={styles.icon}
-              onClick={() => handleDeleteCategory(category._id)}
+              onClick={() => openUpdateModal(category)}
             />
+            {category.can_be_delete && (
+              <FontAwesomeIcon
+                icon={faTrash}
+                style={styles.icon}
+                onClick={() => handleDeleteCategory(category._id)}
+              />
+            )}
           </div>
         ))}
         <button onClick={openMainModal} style={styles.addButton}>
@@ -245,12 +284,14 @@ export default function ManageCategory() {
         onRequestClose={closeMainModal}
       />
       {/* Navigation Row 2 */}
-      {/* Navigation Row 2 */}
       {selectedCategory && (
         <div style={styles.navigationBottom}>
           {subCategories.map((subCategory) => (
             <div
               key={subCategory._id}
+              className={
+                selectedSubCategory?._id === subCategory._id ? "active" : ""
+              }
               style={
                 selectedSubCategory?._id === subCategory._id
                   ? styles.selectedItem
@@ -259,12 +300,19 @@ export default function ManageCategory() {
               onClick={() => handleSubCategoryClick(subCategory)}
             >
               {subCategory.name_category}
-              <FontAwesomeIcon icon={faEdit} style={styles.icon} />
+
               <FontAwesomeIcon
-                icon={faTrash}
+                icon={faEdit}
                 style={styles.icon}
-                onClick={() => handleDeleteCategory(subCategory._id)}
+                onClick={() => openUpdateModal(subCategory)}
               />
+              {subCategory.can_be_delete && (
+                <FontAwesomeIcon
+                  icon={faTrash}
+                  style={styles.icon}
+                  onClick={() => handleDeleteCategory(subCategory._id)}
+                />
+              )}
             </div>
           ))}
           <button onClick={openSubModal} style={styles.addButton}>
@@ -287,6 +335,9 @@ export default function ManageCategory() {
         {childCategories.map((childCategory) => (
           <div
             key={childCategory._id}
+            className={
+              selectedChildCategory?._id === childCategory._id ? "active" : ""
+            }
             style={
               selectedChildCategory?._id === childCategory._id
                 ? styles.selectedItem
@@ -295,12 +346,19 @@ export default function ManageCategory() {
             onClick={() => handleChildCategoryClick(childCategory)}
           >
             {childCategory.name_category}
-            <FontAwesomeIcon icon={faEdit} style={styles.icon} />
+
             <FontAwesomeIcon
-              icon={faTrash}
+              icon={faEdit}
               style={styles.icon}
-              onClick={() => handleDeleteCategory(childCategory._id)}
+              onClick={() => openUpdateModal(childCategory)}
             />
+            {childCategory.can_be_delete && (
+              <FontAwesomeIcon
+                icon={faTrash}
+                style={styles.icon}
+                onClick={() => handleDeleteCategory(childCategory._id)}
+              />
+            )}
           </div>
         ))}
         <button onClick={openChildModal} style={styles.addButton}>
@@ -334,6 +392,93 @@ export default function ManageCategory() {
           ))}
         </div>
       </div>
+      {isUpdateModalOpen && (
+        <div style={styles.modal}>
+          <div style={styles.modalContent}>
+            <h3 style={styles.modalTitle}>Update Category</h3>
+
+            {/* Trường nhập Name */}
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Name:</label>
+              <input
+                type="text"
+                value={nameCategory}
+                onChange={(e) => setNameCategory(e.target.value)}
+                style={styles.input}
+              />
+            </div>
+
+            {/* Trường chọn Parent ID */}
+            {/* Trường chọn Parent ID chỉ hiển thị nếu depth < 2 */}
+            {categoryToUpdate.depth < 2 && (
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>Parent Category:</label>
+                <select
+                  value={parentId || ""}
+                  onChange={(e) => setParentId(e.target.value)}
+                  style={styles.select}
+                >
+                  <option value="">No Parent</option>
+                  {mainCategories
+                    .filter(
+                      (cat) =>
+                        cat.depth === categoryToUpdate.depth - 1 &&
+                        !cat.is_delete // Bỏ qua danh mục đã bị xóa
+                    )
+                    .map((cat) => (
+                      <option key={cat._id} value={cat._id}>
+                        {cat.name_category}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            )}
+
+            {/* Chọn ảnh */}
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Image:</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  setImage(file);
+                }}
+                style={styles.fileInput}
+              />
+            </div>
+
+            {/* Xem trước ảnh */}
+            {image && (
+              <div style={styles.previewContainer}>
+                <p style={styles.previewText}>Selected Image:</p>
+                <img
+                  src={
+                    typeof image === "string"
+                      ? image
+                      : URL.createObjectURL(image)
+                  }
+                  alt="Preview"
+                  style={styles.previewImage}
+                />
+              </div>
+            )}
+
+            {/* Nút hành động */}
+            <div style={styles.buttonGroup}>
+              <button
+                style={styles.updateButton}
+                onClick={handleUpdateCategory}
+              >
+                Update
+              </button>
+              <button style={styles.cancelButton} onClick={closeUpdateModal}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -341,56 +486,179 @@ export default function ManageCategory() {
 const styles = {
   navigationTop: {
     display: "flex",
-    padding: "10px",
-    backgroundColor: "#f5f5f5",
+    flexWrap: "wrap", // Cho phép xuống dòng khi không đủ chỗ
+    gap: "10px", // Khoảng cách giữa các item
+    padding: "15px",
+    background: "linear-gradient(to right, #f9f9f9, #e0e0e0)", // Gradient nhẹ
+    borderRadius: "8px",
+    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)", // Thêm bóng đổ
   },
   navigationBottom: {
     display: "flex",
-    padding: "10px",
-    backgroundColor: "#f5f5f5",
-    borderTop: "2px solid red",
-    marginTop: "10px",
+    flexWrap: "wrap",
+    gap: "10px",
+    padding: "15px",
+    background: "linear-gradient(to right, #f9f9f9, #e0e0e0)",
+    borderRadius: "8px",
+    marginTop: "15px",
+    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
   },
   navigationItem: {
+    padding: "10px 15px", // Thêm khoảng cách bên trong
     fontSize: "16px",
-    marginRight: "20px",
+    borderRadius: "5px",
     cursor: "pointer",
+    backgroundColor: "#ffffff",
+    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+    transition: "transform 0.2s ease, box-shadow 0.2s ease",
+    display: "flex",
+    alignItems: "center", // Căn giữa biểu tượng và text
+    justifyContent: "space-between",
   },
   selectedItem: {
+    padding: "10px 15px",
     fontSize: "16px",
-    marginRight: "20px",
+    borderRadius: "5px",
     cursor: "pointer",
     fontWeight: "bold",
-    color: "blue",
+    color: "white",
+    backgroundColor: "#007BFF",
+    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.2)",
   },
   addButton: {
-    backgroundColor: "#00FF38",
+    backgroundColor: "#28a745",
     color: "white",
     border: "none",
-    borderRadius: "20%",
-    width: "30px",
-    height: "30px",
+    borderRadius: "50%",
+    width: "40px",
+    height: "40px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     cursor: "pointer",
+    transition: "transform 0.2s ease",
+  },
+  addButtonHover: {
+    transform: "scale(1.1)", // Hiệu ứng khi hover
   },
   screen: {
     marginTop: "20px",
     padding: "20px",
     border: "1px solid #ddd",
+    borderRadius: "8px",
+    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+    backgroundColor: "#ffffff",
   },
   containerShowProducts: {
     display: "flex",
     flexWrap: "wrap",
-    justifyContent: "space-around",
+    justifyContent: "space-between",
     gap: "20px",
-    width: "70%",
+    width: "1000px",
   },
   icon: {
     cursor: "pointer",
-    fontSize: "16px",
+    fontSize: "18px",
     marginLeft: "10px",
-    color: "red",
+    color: "#dc3545",
+    transition: "color 0.2s ease",
+  },
+  iconHover: {
+    color: "#a71d2a",
+  },
+  modal: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000,
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    padding: "20px 30px",
+    borderRadius: "10px",
+    width: "400px",
+    boxShadow: "0 4px 10px rgba(0, 0, 0, 0.2)",
+    textAlign: "center",
+    animation: "fadeIn 0.3s ease-in-out",
+  },
+  modalTitle: {
+    marginBottom: "20px",
+    fontSize: "20px",
+    fontWeight: "bold",
+    color: "#333",
+  },
+  inputGroup: {
+    marginBottom: "15px",
+    textAlign: "left",
+  },
+  label: {
+    display: "block",
+    marginBottom: "5px",
+    fontSize: "14px",
+    color: "#555",
+  },
+  input: {
+    width: "100%",
+    padding: "10px",
+    border: "1px solid #ddd",
+    borderRadius: "5px",
+    fontSize: "14px",
+    outline: "none",
+    transition: "border-color 0.3s",
+  },
+  inputFocus: {
+    borderColor: "#007BFF",
+  },
+  fileInput: {
+    border: "none",
+  },
+  previewContainer: {
+    margin: "15px 0",
+    textAlign: "center",
+  },
+  previewText: {
+    marginBottom: "10px",
+    fontSize: "14px",
+    color: "#555",
+  },
+  previewImage: {
+    width: "100px",
+    height: "100px",
+    objectFit: "cover",
+    borderRadius: "5px",
+    border: "1px solid #ddd",
+  },
+  buttonGroup: {
+    display: "flex",
+    justifyContent: "space-between",
+    marginTop: "20px",
+  },
+  updateButton: {
+    padding: "10px 20px",
+    backgroundColor: "#007BFF",
+    color: "#fff",
+    border: "none",
+    borderRadius: "5px",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: "bold",
+    transition: "background-color 0.3s",
+  },
+  cancelButton: {
+    padding: "10px 20px",
+    backgroundColor: "#6c757d",
+    color: "#fff",
+    border: "none",
+    borderRadius: "5px",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: "bold",
+    transition: "background-color 0.3s",
   },
 };

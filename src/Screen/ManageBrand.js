@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import AddBrandModal from "../component/AddBrandModal";
+import DeleteDialog from "../component/DeleteDialog";
 
 const ManageBrand = () => {
   const [brands, setBrands] = useState([]);
@@ -8,13 +9,29 @@ const ManageBrand = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedBrand, setSelectedBrand] = useState(null);
   const [imageFile, setImageFile] = useState(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [brandToDelete, setBrandToDelete] = useState(null);
+  const [loading, setLoading] = useState(false); // Trạng thái loading chỉ trong modal
 
-  const fetchBrands = () => {
+  const handleDeleteClick = (id) => {
+    setBrandToDelete(id);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteBrand = () => {
+    handleDeleteBrand(brandToDelete);
+    setIsDeleteDialogOpen(false);
+  };
+
+  const fetchBrands = (isDelete) => {
+    // Chuyển isDelete thành query parameter
+    const params =
+      isDelete !== undefined ? { is_delete: isDelete.toString() } : {};
+
     axios
-      .get("http://localhost:5000/v1/api/brand/get_all_brands")
+      .get("https://backenddatn-production.up.railway.app/v1/api/brand/get_all_brands", { params })
       .then((response) => {
-        setBrands(response.data.brands); // Cập nhật danh sách thương hiệu vào state
-        console.log(response.data.brands);
+        setBrands(response.data.metadata);
       })
       .catch((error) => {
         console.error("Error fetching brands:", error);
@@ -22,7 +39,11 @@ const ManageBrand = () => {
   };
 
   useEffect(() => {
-    fetchBrands(); // Gọi hàm fetchBrands khi component được render lần đầu
+    fetchBrands(false); // Giả sử bạn muốn lấy các brands chưa bị xóa
+  }, []);
+
+  useEffect(() => {
+    fetchBrands(false);
   }, []);
 
   const handleAddBrand = (newBrand) => {
@@ -31,7 +52,9 @@ const ManageBrand = () => {
 
   const handleDeleteBrand = (id) => {
     axios
-      .delete(`http://localhost:5000/v1/api/brand/delete_brand?id=${id}`)
+      .delete(
+        `https://backenddatn-production.up.railway.app/v1/api/toggle_delete_brand?_id=${id}`
+      )
       .then(() => {
         fetchBrands();
       })
@@ -41,31 +64,35 @@ const ManageBrand = () => {
   };
 
   const handleEditBrand = (updatedBrand) => {
+    setLoading(true); // Bật trạng thái loading khi bắt đầu sửa
     const formData = new FormData();
     formData.append("name_brand", updatedBrand.name_brand);
-    if (imageFile) formData.append("image", imageFile); // Thêm hình ảnh nếu có
+    if (imageFile) formData.append("image", imageFile);
 
     axios
       .put(
-        `http://localhost:5000/v1/api/brand/update_brand?id=${updatedBrand._id}`,
-        formData, // Gửi dữ liệu dưới dạng FormData
+        `https://backenddatn-production.up.railway.app/v1/api/brand/update_brand?_id=${updatedBrand._id}`,
+        formData,
         {
           headers: {
-            "Content-Type": "multipart/form-data", // Đảm bảo header đúng
+            "Content-Type": "multipart/form-data",
           },
         }
       )
       .then(() => {
-        fetchBrands(); // Làm mới danh sách thương hiệu
-        setIsEditModalOpen(false); // Đóng modal sau khi cập nhật
+        fetchBrands();
+        setIsEditModalOpen(false);
       })
       .catch((error) => {
         console.error("Error updating brand:", error);
+      })
+      .finally(() => {
+        setLoading(false); // Tắt trạng thái loading khi hoàn thành
       });
   };
 
   const handleImageChange = (e) => {
-    setImageFile(e.target.files[0]); // Lưu tệp hình ảnh được chọn
+    setImageFile(e.target.files[0]);
   };
 
   return (
@@ -83,7 +110,7 @@ const ManageBrand = () => {
               <p>No image available</p>
             )}
             <h3 style={styles.name}>{brand.name_brand}</h3>
-            <p style={styles.price}>{brand.productCount} products</p>
+            {/* <p style={styles.price}>{brand.productCount} products</p> */}
             <div style={styles.buttonContainer}>
               <button
                 style={styles.editButton}
@@ -94,15 +121,20 @@ const ManageBrand = () => {
               >
                 EDIT
               </button>
-              <button
-                style={styles.deleteButton}
-                onClick={() => handleDeleteBrand(brand._id)}
-              >
-                DELETE
-              </button>
+
+              {/* Kiểm tra trường can_be_delete trước khi hiển thị nút DELETE */}
+              {brand.can_be_delete && (
+                <button
+                  style={styles.deleteButton}
+                  onClick={() => handleDeleteClick(brand._id)}
+                >
+                  DELETE
+                </button>
+              )}
             </div>
           </div>
         ))}
+
       <div onClick={() => setIsModalOpen(true)} style={styles.addButton}>
         +
       </div>
@@ -110,6 +142,11 @@ const ManageBrand = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onAddBrand={handleAddBrand}
+      />
+      <DeleteDialog
+        open={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onConfirm={confirmDeleteBrand}
       />
 
       {isEditModalOpen && (
@@ -133,11 +170,21 @@ const ManageBrand = () => {
               onChange={handleImageChange}
               style={styles.input}
             />
+            {imageFile && (
+              <div style={styles.previewContainer}>
+                <img
+                  src={URL.createObjectURL(imageFile)}
+                  alt="Preview"
+                  style={styles.previewImage}
+                />
+              </div>
+            )}
             <button
               onClick={() => handleEditBrand(selectedBrand)}
               style={styles.saveButton}
+              disabled={loading} // Disable button khi đang loading
             >
-              Save
+              {loading ? "Updating..." : "Save"}
             </button>
             <button
               onClick={() => setIsEditModalOpen(false)}
@@ -146,6 +193,11 @@ const ManageBrand = () => {
               Cancel
             </button>
           </div>
+          {loading && (
+            <div style={styles.loadingOverlay}>
+              <div style={styles.loader}></div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -258,6 +310,35 @@ const styles = {
     padding: "10px 20px",
     borderRadius: "4px",
     cursor: "pointer",
+  },
+  previewContainer: {
+    marginTop: "10px",
+    textAlign: "center",
+  },
+  previewImage: {
+    width: "100px",
+    height: "100px",
+    objectFit: "cover",
+  },
+  loadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1,
+  },
+  loader: {
+    border: "8px solid #f3f3f3",
+    borderTop: "8px solid #28a745",
+    borderRadius: "50%",
+    width: "40px",
+    height: "40px",
+    animation: "spin 2s linear infinite",
   },
 };
 

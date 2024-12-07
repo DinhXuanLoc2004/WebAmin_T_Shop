@@ -127,7 +127,6 @@ export default function Orders() {
         const response = await axios.get(
           "http://localhost:5000/v1/api/order/get_all_orders"
         );
-        console.log(response.data.metadata);
         setOrders(response.data.metadata);
       } catch (error) {
         console.error("Error fetching orders:", error);
@@ -154,9 +153,10 @@ export default function Orders() {
     setIsModalOpen(true);
     try {
       const response = await axios.get(
-        `http://localhost:5000/v1/api/order/get_order_detail?_id=${id}`
+        `http://localhost:5000/v1/api/order/get_order_detail?order_id=${id}`
       );
-      setSelectedOrder(response.data.metadata[0]);
+      setSelectedOrder(response.data.metadata);
+      console.log(response.data.metadata)
     } catch (error) {
       console.error("Error fetching order detail:", error);
     } finally {
@@ -195,9 +195,10 @@ export default function Orders() {
   };
 
   const nextStatusMap = {
-    Confirming: "Confirmed",
-    Confirmed: "Delivering",
-    Delivering: "Delivered Successfully",
+    Confirming: ["Confirmed"],
+    Confirmed: ["Delivering"],
+    // Delivering: ["Delivered Successfully", "Delivery Failed"],
+    Delivering: ["Delivered Successfully"],
   };
 
   const handleUpdateLocation = async () => {
@@ -236,11 +237,10 @@ export default function Orders() {
     }
   };
 
-  const handleUpdateStatus = async () => {
+  const handleUpdateStatus = async (nextStatus) => {
     if (!currentOrder) return;
 
-    const { _id: order_id, order_status: currentStatus } = currentOrder;
-    const nextStatus = nextStatusMap[currentStatus];
+    const { _id: order_id } = currentOrder;
 
     if (!nextStatus) {
       console.log("No next status available for this order.");
@@ -294,8 +294,8 @@ export default function Orders() {
               <th style={{ ...styles.thTd, ...styles.th }}>Leadtime</th>
               <th style={{ ...styles.thTd, ...styles.th }}>Total Amount</th>
               <th style={{ ...styles.thTd, ...styles.th }}>Status</th>
-              <th style={{ ...styles.thTd, ...styles.th }}>Actions</th>
-              {/* Cột Status */}
+              {/* <th style={{ ...styles.thTd, ...styles.th }}>Actions</th> */}
+              <th style={{ ...styles.thTd, ...styles.th }}>Note </th>
             </tr>
           </thead>
           <tbody>
@@ -343,21 +343,22 @@ export default function Orders() {
                       setCurrentOrder(order); // Lưu thông tin order hiện tại
                       handleUpdateStatus(nextStatus); // Gọi hàm cập nhật
                     }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
                   >
                     <option value={order.order_status} disabled>
                       {order.order_status}
                     </option>
-                    {Object.keys(nextStatusMap).includes(
-                      order.order_status
-                    ) && (
-                      <option value={nextStatusMap[order.order_status]}>
-                        {nextStatusMap[order.order_status]}
+                    {nextStatusMap[order.order_status]?.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
                       </option>
-                    )}
+                    ))}
                   </select>
                 </td>
 
-                <td style={styles.thTdTable}>
+                {/* <td style={styles.thTdTable}>
                   {order.order_status === "Delivering" && (
                     <button
                       style={{
@@ -376,7 +377,9 @@ export default function Orders() {
                       Update Location
                     </button>
                   )}
-                </td>
+                </td> */}
+
+                <td style={styles.thTdTable}>{order.cancellation_reason}</td>
               </tr>
             ))}
           </tbody>
@@ -516,7 +519,7 @@ export default function Orders() {
       )}
       {isModalOpen1 && (
         <div style={styles.modalOverlay} onClick={closeModal}>
-          <div style={styles.modalContent}>
+          {/* <div style={styles.modalContent}>
             <h3>Update Location</h3>
             <div>
               <label>Province</label>
@@ -581,7 +584,7 @@ export default function Orders() {
             <button style={styles.modalButton} onClick={handleCloseModal}>
               Close
             </button>
-          </div>
+          </div> */}
         </div>
       )}
     </div>

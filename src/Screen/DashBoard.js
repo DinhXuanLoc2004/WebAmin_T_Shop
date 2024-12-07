@@ -320,6 +320,8 @@ const styles = {
     padding: 20,
     border: "1px solid #ddd",
     backgroundColor: "#f9f9f9",
+    width:1800
+
   },
   containerShowProducts: {
     display: "flex",

@@ -1,4 +1,4 @@
-import React,{useState} from "react";
+import React, { useState } from "react";
 import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -8,6 +8,8 @@ import {
   faShoppingCart,
   faThList,
   faRecycle,
+  faTicket,
+  faTag,
 } from "@fortawesome/free-solid-svg-icons";
 import DashBoard from "../Screen/DashBoard";
 import ManageProducts from "../Screen/ManageProducts";
@@ -16,6 +18,8 @@ import Orders from "../Screen/Orders";
 import ManageCategory from "../Screen/ManageCategory";
 import ManageBrand from "../Screen/ManageBrand";
 import RecycleBin from "../Screen/RecycleBin";
+import SaleProducts from "../Screen/SaleProducts";
+import Vouchers from "../Screen/Vouchers";
 
 export default function Navigation() {
   const [selected, setSelected] = useState("");
@@ -24,7 +28,7 @@ export default function Navigation() {
   };
   return (
     <div style={styles.container}>
-       <nav style={styles.nav}>
+      <nav style={styles.nav}>
         <ul style={styles.list}>
           <li
             style={{
@@ -194,6 +198,54 @@ export default function Navigation() {
               Recycle Bin
             </Link>
           </li>
+          <li
+            style={{
+              ...styles.listItem,
+              ...(selected === "sale" && styles.selectedItem),
+            }}
+          >
+            <Link
+              style={{
+                ...styles.link,
+                color: selected === "sale" ? "red" : "gray",
+              }}
+              to="/sale"
+              onClick={() => handleSelect("sale")}
+            >
+              <FontAwesomeIcon
+                icon={faTag}
+                style={{
+                  ...styles.icon,
+                  color: selected === "sale" ? "red" : "gray",
+                }}
+              />
+              Sale Product
+            </Link>
+          </li>
+          <li
+            style={{
+              ...styles.listItem,
+              ...(selected === "voucher" && styles.selectedItem),
+            }}
+          >
+            <Link
+              style={{
+                ...styles.link,
+                color: selected === "voucher" ? "red" : "gray",
+              }}
+              to="/voucher"
+              onClick={() => handleSelect("voucher")}
+            >
+              <FontAwesomeIcon
+                icon={faTicket}
+                style={{
+                  ...styles.icon,
+                  color: selected === "voucher" ? "red" : "gray",
+                }}
+              />
+              Vouchers
+            </Link>
+          </li>
         </ul>
       </nav>
       <div style={styles.content}>
@@ -205,6 +257,8 @@ export default function Navigation() {
           <Route path="/brand" element={<ManageBrand />} />
           <Route path="/user" element={<ManageUser />} />
           <Route path="/recycle" element={<RecycleBin />} />
+          <Route path="/sale" element={<SaleProducts />} />
+          <Route path="/voucher" element={<Vouchers />} />
         </Routes>
       </div>
     </div>
@@ -254,6 +308,6 @@ const styles = {
     marginRight: 10,
   },
   content: {
-    flex: 1, 
+    flex: 1,
   },
 };

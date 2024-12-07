@@ -1,18 +1,56 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
+import axiosInstance from "../helper/axiosIntercreptor";
 import { faEnvelope, faKey } from "@fortawesome/free-solid-svg-icons";
-
+import "../Css/Spinner.css";
 export default function LoginScreen({ onLogin }) {
+  const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = () => {
-    onLogin(); // Gọi hàm onLogin từ props
-    navigate('/dashboard'); // Chuyển đến dashboard
-  };
+  useEffect(() => {
+    const storedEmail = localStorage.getItem("email");
+    const storedPassword = localStorage.getItem("password");
+    
+    if (storedEmail && storedPassword) {
+      setEmail(storedEmail);
+      setPassword(storedPassword);
+      setRememberMe(true);
+    }
+  }, []);
 
+  const handleLogin = async () => {
+    setIsLoading(true);
+    try {
+      const response = await axiosInstance.post("/admin/login_admin", {
+        email: email,
+        password: password,
+      });
+      if (response.data.status === 200) {
+        onLogin();
+        navigate("/dashboard");
+
+        if (rememberMe) {
+          localStorage.setItem("email", email);
+          localStorage.setItem("password", password);
+        } else {
+          localStorage.removeItem("email");
+          localStorage.removeItem("password");
+        }
+      } else {
+        setError("Invalid email or password!");
+      }
+    } catch (error) {
+      setError("Something went wrong. Please try again!");
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
   return (
     <div style={styles.gradientStyle}>
       <div style={styles.container}>
@@ -43,37 +81,60 @@ export default function LoginScreen({ onLogin }) {
             />
           </div>
         </div>
+        {error && (
+          <div style={{ color: "red", marginTop: "10px", textAlign: "center" }}>
+            {error}
+          </div>
+        )}
+
         <div style={styles.optionText}>
           <div style={{ flex: "row" }}>
-            <input
+          <input
               style={{ height: 20, width: 20 }}
               type="checkbox"
               id="myCheckbox"
+              checked={rememberMe}
+              onChange={() => setRememberMe(!rememberMe)}
             />
             <label htmlFor="myCheckbox">Remember me</label>
           </div>
           <span style={{ color: "red", marginRight: 80 }}>Forget Password</span>
         </div>
-        <button style={styles.button} title="Login" onClick={handleLogin}>
-          <span style={styles.buttonText}>Login</span>
+
+        <button
+          disabled={isLoading}
+          style={styles.button}
+          title="Login"
+          onClick={handleLogin}
+        >
+          {isLoading ? (
+            <div style={styles.spinnerContainer}>
+              <div className="spinner"></div>
+            </div>
+          ) : (
+            "Login"
+          )}
         </button>
       </div>
     </div>
   );
 }
 
-// Styles remain unchanged
-
-
 const styles = {
+  spinnerContainer: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    height: "100%",
+  },
   gradientStyle: {
-    background: "linear-gradient(to bottom, red, white)", // Chuyển màu từ đỏ sang trắng
+    background: "linear-gradient(to bottom, red, white)",
     width: "100%",
     height: "100vh",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    color: "#000", // Màu chữ
+    color: "#000",
     fontSize: "24px",
   },
   container: {
@@ -127,9 +188,8 @@ const styles = {
     color: "#000",
     paddingLeft: "20px",
     marginTop: "10px",
-    border: "none", // This removes the border
+    border: "none",
     outline: "none",
-    fontSize: "25px",
     fontWeight: "bold",
   },
   icon: {
