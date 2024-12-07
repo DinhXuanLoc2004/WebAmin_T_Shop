@@ -12,6 +12,7 @@ import {
 import Modal from "react-bootstrap/Modal";
 import "../Css/Dialog.css";
 import axios from "axios";
+import axiosInstance from "../helper/axiosIntercreptor";
 import ColorAndSize from "../component/ColorAndSize";
 import DeleteDialog from "../component/DeleteDialog";
 
@@ -156,8 +157,8 @@ export default function ManageProducts() {
         formData.append("images", image);
       });
 
-      await axios.post(
-        "http://localhost:5000/v1/api/product/add_product",
+      await axiosInstance.post(
+        "/product/add_product",
         formData,
         {
           headers: {

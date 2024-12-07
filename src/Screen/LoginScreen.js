@@ -1,13 +1,27 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../helper/axiosIntercreptor";
 import { faEnvelope, faKey } from "@fortawesome/free-solid-svg-icons";
+
 export default function LoginScreen({ onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const storedEmail = localStorage.getItem("email");
+    const storedPassword = localStorage.getItem("password");
+    
+    if (storedEmail && storedPassword) {
+      setEmail(storedEmail);
+      setPassword(storedPassword);
+      setRememberMe(true);
+    }
+  }, []);
+
   const handleLogin = async () => {
     try {
       const response = await axiosInstance.post("/admin/login_admin", {
@@ -17,15 +31,24 @@ export default function LoginScreen({ onLogin }) {
       if (response.data.status === 200) {
         onLogin();
         navigate("/dashboard");
-        alert("Login successful!");
+        alert("Đăng nhập thành công!");
+
+        if (rememberMe) {
+          localStorage.setItem("email", email);
+          localStorage.setItem("password", password);
+        } else {
+          localStorage.removeItem("email");
+          localStorage.removeItem("password");
+        }
       } else {
-        setError("Invalid email or password!");
+        setError("Email hoặc mật khẩu không chính xác!");
       }
     } catch (error) {
-      setError("Something went wrong. Please try again!");
+      setError("Có lỗi xảy ra. Vui lòng thử lại!");
       console.error(error);
     }
   };
+
   return (
     <div style={styles.gradientStyle}>
       <div style={styles.container}>
@@ -68,6 +91,8 @@ export default function LoginScreen({ onLogin }) {
               style={{ height: 20, width: 20 }}
               type="checkbox"
               id="myCheckbox"
+              checked={rememberMe}
+              onChange={() => setRememberMe(!rememberMe)}
             />
             <label htmlFor="myCheckbox">Remember me</label>
           </div>
