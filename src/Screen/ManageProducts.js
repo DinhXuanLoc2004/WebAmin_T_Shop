@@ -52,6 +52,7 @@ export default function ManageProducts() {
         `http://localhost:5000/v1/api/product/get_all_products?is_delete=${false}`
       );
       setProducts(result.data.metadata.products);
+      console.log(result.data.metadata.products);
     } catch (error) {
       console.error("Lỗi khi gọi API:", error);
     }
@@ -71,6 +72,7 @@ export default function ManageProducts() {
         `http://localhost:5000/v1/api/product/get_detail_product?product_id=${productId}`
       );
       setSelectedProduct(result.data.metadata);
+      console.log(result.data.metadata);
       setIsDialogOpen(true);
     } catch (error) {
       console.error("Error fetching product details:", error);
@@ -135,6 +137,7 @@ export default function ManageProducts() {
             <th style={styles.thTd}>Rate</th>
             <th style={styles.thTd}>Quantity</th>
             <th style={styles.thTd}>Price</th>
+            <th style={styles.thTd}>Discount</th>
             <th style={styles.thTd}>Actions</th>
           </tr>
         </thead>
@@ -169,12 +172,14 @@ export default function ManageProducts() {
                   currency: "VND",
                 }).format(product.price_min)}
               </td>
-
+              <td style={styles.thTdTable}>{product.discount}%</td>
               <td style={styles.thTd}>
-                <EditProduct
-                  productId={product._id}
-                  onProductUpdated={fetchProducts}
-                />
+                <button style={{ border: "none", background: "white"}}>
+                  <EditProduct
+                    productId={product._id}
+                    onProductUpdated={fetchProducts}
+                  />
+                </button>
                 <button
                   style={styles.deleteBtn}
                   onClick={(e) => handleDeleteButtonClick(product._id, e)}
@@ -242,19 +247,29 @@ export default function ManageProducts() {
             <div style={styles.productInfo}>
               <div>
                 <h1>{selectedProduct.name_product}</h1>
-                <div style={styles.priceRateContainer}>
-                  <div style={styles.priceContainer}>
+                <div>
+                  <div style={{ display: "flex" }}>
                     <h4 style={{ fontWeight: "bold" }}>
-                      ${selectedProduct.price}
+                      {new Intl.NumberFormat("vi-VN", {
+                        style: "currency",
+                        currency: "VND",
+                      }).format(
+                        selectedProduct.price -
+                          selectedProduct.price *
+                            (selectedProduct.discount / 100)
+                      )}
                     </h4>
-                    <h6>
+                    <h6 style={{ marginLeft: "10px" }}>
                       <span
                         style={{
                           textDecoration: "line-through",
                           color: "gray",
                         }}
                       >
-                        ${selectedProduct.price}
+                        {new Intl.NumberFormat("vi-VN", {
+                          style: "currency",
+                          currency: "VND",
+                        }).format(selectedProduct.price)}
                       </span>
                     </h6>
                   </div>
@@ -317,6 +332,7 @@ export default function ManageProducts() {
               </p>
               <p
                 style={{
+                  width: "80%",
                   justifyContent: "space-between",
                   display: "flex",
                 }}
@@ -425,6 +441,7 @@ const styles = {
     alignItems: "center",
   },
   colorCircle: {
+    border: "1px solid #ccc",
     display: "inline-block",
     width: "40px",
     height: "40px",
@@ -460,12 +477,6 @@ const styles = {
   },
   modalBody: {
     display: "flex",
-  },
-  priceRateContainer: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    width: "300px",
   },
   addBtn: {
     position: "absolute",

@@ -156,7 +156,7 @@ export default function Orders() {
         `http://localhost:5000/v1/api/order/get_order_detail?order_id=${id}`
       );
       setSelectedOrder(response.data.metadata);
-      console.log(response.data.metadata)
+      console.log(response.data.metadata);
     } catch (error) {
       console.error("Error fetching order detail:", error);
     } finally {
@@ -314,7 +314,12 @@ export default function Orders() {
                 <td style={styles.thTdTable}>
                   {formatDateTime(order.leadtime, false)}
                 </td>
-                <td style={styles.thTdTable}>${order.total_amount}</td>
+                <td style={styles.thTdTable}>
+                  {new Intl.NumberFormat("vi-VN", {
+                    style: "currency",
+                    currency: "VND",
+                  }).format(order.total_amount)}
+                </td>
                 <td style={styles.thTdTable}>
                   <select
                     style={{
@@ -442,9 +447,28 @@ export default function Orders() {
                           {product.color} - {product.size}
                         </span>
                         <div style={styles.productPriceQuantity}>
-                          <span style={styles.productPrice}>
-                            ${product.price}
-                          </span>
+                          <div>
+                            <span
+                              style={{
+                                textDecoration: "line-through",
+                                marginRight: "10px",
+                              }}
+                            >
+                              {new Intl.NumberFormat("vi-VN", {
+                                style: "currency",
+                                currency: "VND",
+                              }).format(product.price)}
+                            </span>
+                            <span>
+                              {new Intl.NumberFormat("vi-VN", {
+                                style: "currency",
+                                currency: "VND",
+                              }).format(
+                                product.price -
+                                  product.price * (product.discount / 100)
+                              )}
+                            </span>
+                          </div>
                           <span style={styles.productQuantity}>
                             x {product.quantity}
                           </span>
@@ -478,16 +502,36 @@ export default function Orders() {
                     </div>
                     <div>
                       <div>
-                        $
-                        {selectedOrder.products_order.reduce(
-                          (total, product) =>
-                            total + product.price * product.quantity,
-                          0
+                        {new Intl.NumberFormat("vi-VN", {
+                          style: "currency",
+                          currency: "VND",
+                        }).format(
+                          selectedOrder.products_order.reduce(
+                            (total, product) =>
+                              total + (product.price -
+                                product.price * (product.discount / 100)) * product.quantity,
+                            0
+                          )
                         )}
                       </div>
-                      <div>${selectedOrder.delivery_fee}</div>
-                      <div style={{ marginBottom: "10px" }}>
-                        -${selectedOrder.value_voucher}
+                      <div>
+                        +{new Intl.NumberFormat("vi-VN", {
+                          style: "currency",
+                          currency: "VND",
+                        }).format(selectedOrder.delivery_fee)}
+                      </div>
+                      <div style={{marginBottom: "10px"}}>
+                        -{new Intl.NumberFormat("vi-VN", {
+                          style: "currency",
+                          currency: "VND",
+                        }).format(
+                          selectedOrder.products_order.reduce(
+                            (total, product) =>
+                              total + (product.price -
+                                product.price * (product.discount / 100)) * product.quantity,
+                            0 
+                          ) * (selectedOrder.value_voucher / 100)
+                        )}
                       </div>
                     </div>
                   </div>
@@ -507,7 +551,10 @@ export default function Orders() {
                       fontSize: "18px",
                     }}
                   >
-                    ${selectedOrder.total_amount}
+                    {new Intl.NumberFormat("vi-VN", {
+                      style: "currency",
+                      currency: "VND",
+                    }).format(selectedOrder.total_amount)}
                   </div>
                 </div>
               </div>

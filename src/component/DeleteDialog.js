@@ -13,7 +13,7 @@ export default function DeleteDialog({ open, onClose, onConfirm }) {
       left: "50%",
       transform: "translate(-50%, -50%)",
       width: 400,
-      backgroundColor: "#F2F4FC", // Đặt nền trắng cho Box
+      backgroundColor: "#F2F4FC",
       borderRadius: "10px",
       padding: "20px",
       boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.1)",
@@ -42,7 +42,7 @@ export default function DeleteDialog({ open, onClose, onConfirm }) {
       aria-labelledby="modal-modal-title"
       aria-describedby="modal-modal-description"
       BackdropProps={{
-        style: { backgroundColor: "transparent" }, // Loại bỏ nền tối
+        style: { backgroundColor: "transparent" },
       }}
     >
       <Box style={style.container}>

@@ -260,19 +260,29 @@ export default function EditProduct({ productId, onProductUpdated }) {
     });
   };
 
-  const handleVariantChange = (index, e) => {
-    const { name, value, type, checked } = e.target;
+  // const handleVariantChange = (index, e) => {
+  //   const { name, value, type, checked } = e.target;
+  //   const updatedVariants = [...formData.product_variants];
+  //   if (type === "checkbox") {
+  //     updatedVariants[index][name] = checked;
+  //   } else {
+  //     updatedVariants[index][name] = value;
+  //   }
+  //   setFormData({
+  //     ...formData,
+  //     product_variants: updatedVariants,
+  //   });
+  // };
+
+  const handleVariantChange = (index, field, value) => {
     const updatedVariants = [...formData.product_variants];
-    if (type === "checkbox") {
-      updatedVariants[index][name] = checked;
-    } else {
-      updatedVariants[index][name] = value;
-    }
+    updatedVariants[index][field] = value; // Sử dụng trực tiếp field thay vì name
     setFormData({
       ...formData,
       product_variants: updatedVariants,
     });
   };
+  
 
   const handleAddVariant = () => {
     setFormData({
