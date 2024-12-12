@@ -1,189 +1,240 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
-import DeleteDialog from "../component/DeleteDialog";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTrash, faEdit } from "@fortawesome/free-solid-svg-icons";
+import axiosInstance from "../helper/axiosIntercreptor";
+import "../Css/Spinner.css";
+
 export default function Vouchers() {
-  // Hàm gọi API xóa voucher
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [voucherToDelete, setVoucherToDelete] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [editVoucher, setEditVoucher] = useState({}); // Voucher đang được chỉnh sửa
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-
-  const openEditModal = (voucher) => {
-    console.log("Voucher:", voucher);
-    setEditVoucher(voucher);
-    setIsEditModalOpen(true);
-  };
-  const handleEditChange = (e) => {
-    const { name, value } = e.target;
-    setEditVoucher((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-  const handleEditSubmit = async () => {
-    try {
-      // Chỉ truyền _id vào URL, và toàn bộ editVoucher vào body
-      console.log("editVoucher._id:", editVoucher); //
-      await axios.put(
-        `http://localhost:5000/v1/api/voucher/update_voucher?_id=${editVoucher._id}`,
-        editVoucher
-      );
-      setIsEditModalOpen(false);
-      fetchVouchers(); // Làm mới danh sách
-    } catch (error) {
-      console.error("Error updating voucher:", error);
-    }
-  };
-
-  const confirmDelete = (_id) => {
-    setVoucherToDelete(_id);
-    setIsDeleteDialogOpen(true);
-  };
-
-  // Handle delete voucher
-  const handleDeleteVoucher = async () => {
-    if (!voucherToDelete) return;
-    try {
-      await axios.patch(
-        `http://localhost:5000/v1/api/voucher/toggle_active_voucher?_id=${voucherToDelete}`
-      );
-      fetchVouchers();
-    } catch (error) {
-      console.error("Error deleting voucher:", error);
-    } finally {
-      setIsDeleteDialogOpen(false);
-      setVoucherToDelete(null);
-    }
-  };
-
   const [searchItem, setSearchItem] = useState("");
-  const [voucher, setVoucher] = useState([]);
-  const [showModal, setShowModal] = useState(false);
-  const [showViewModal, setViewShowModal] = useState(false);
-  const [detailVoucher, setDetailVoucher] = useState("");
+  const [vouchers, setVouchers] = useState([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [editVoucher, setEditVoucher] = useState({
+    _id: "",
+    voucher_name: "",
+    voucher_description: "",
+    voucher_type: "deduct_money",
+    voucher_value: "",
+    voucher_code: "",
+    time_start: "",
+    time_end: "",
+    quantity: "",
+    is_active: true,
+    min_order_value: "",
+    is_voucher_new_user: false,
+    user: [],
+    image_voucher: null,
+  });
+
   const [newVoucher, setNewVoucher] = useState({
     voucher_name: "",
     voucher_description: "",
-    voucher_type: "percent",
-    voucher_value: 0,
+    voucher_type: "deduct_money",
+    voucher_value: "",
     voucher_code: "",
-    image: null,
     time_start: "",
     time_end: "",
-    quantity: 0,
-    min_order_value: 0,
+    quantity: "",
+    min_order_value: "",
     is_active: true,
     is_voucher_new_user: false,
+    user: [],
+    image_voucher: null,
   });
+  const fetchUsers = async () => {
+    try {
+      const response = await axiosInstance.get("auth/get_all_users");
+      setUsers(response.data.metadata);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    }
+  };
+
   const fetchVouchers = async () => {
     try {
-      const response = await axios.get(
-        "http://localhost:5000/v1/api/voucher/get_all_vouchers/admin"
+      const response = await axiosInstance.get(
+        "voucher/get_all_vouchers/admin"
       );
-      const allVouchers = response.data.metadata || []; // Lấy dữ liệu trả về từ API
-      const activeVouchers = allVouchers.filter((voucher) => voucher.is_active); // Lọc các voucher is_active = true
-
-      setVoucher(activeVouchers);
+      setVouchers(response.data.metadata);
     } catch (error) {
       console.error("Error fetching vouchers:", error);
     }
   };
-  const getDetailVoucher = async (_id) => {
+
+  useEffect(() => {
+    fetchVouchers();
+    fetchUsers();
+  }, []);
+
+  const handleEditChange = (e) => {
+    setIsLoading(true);
+    const { name, value, type, checked, files } = e.target;
+
+    if (name === "image_voucher" && files && files[0]) {
+      const imageFile = files[0];
+      setEditVoucher((prev) => ({
+        ...prev,
+        image_voucher: imageFile,
+      }));
+    } else {
+      setEditVoucher((prev) => ({
+        ...prev,
+        [name]: type === "checkbox" ? checked : value,
+      }));
+      setIsLoading(false);
+    }
+  };
+  const handleDelete = async (voucherId) => {
     try {
-      const response = await axios.get(
-        `http://localhost:5000/v1/api/voucher/get_detail_voucher/`,
-        { params: { _id: _id } }
+      const response = await axiosInstance.put(
+        `voucher/toggle_active_voucher?_id=${voucherId}`
       );
-      setDetailVoucher(response.data.metadata);
-      setViewShowModal(true);
+      setVouchers((prevVouchers) =>
+        prevVouchers.map((voucher) =>
+          voucher._id === voucherId
+            ? { ...voucher, is_active: !voucher.is_active }
+            : voucher
+        )
+      );
     } catch (error) {
-      console.error("Error getting detail:", error);
+      console.error("Error deactivating voucher:", error);
     }
   };
 
-  // Fetch vouchers
-  useEffect(() => {
-    const fetchVouchers = async () => {
-      try {
-        const response = await axios.get(
-          "http://localhost:5000/v1/api/voucher/get_all_vouchers/admin"
-        );
-        const allVouchers = response.data.metadata || []; // Lấy dữ liệu trả về từ API
-        const activeVouchers = allVouchers.filter(
-          (voucher) => voucher.is_active
-        ); // Lọc các voucher is_active = true
+  const handleAddChange = (e) => {
+    const { name, value, type, checked, files } = e.target;
 
-        setVoucher(activeVouchers);
-      } catch (error) {
-        console.error("Error fetching vouchers:", error);
-      }
-    };
-    fetchVouchers();
-  }, []);
-
-  // Handle input change
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setNewVoucher((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+    if (name === "image_voucher" && files && files[0]) {
+      const imageFile = files[0];
+      setNewVoucher((prev) => ({
+        ...prev,
+        image_voucher: imageFile,
+      }));
+    } else {
+      setNewVoucher((prev) => ({
+        ...prev,
+        [name]: type === "checkbox" ? checked : value,
+      }));
+    }
   };
 
-  // Handle image upload
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    setNewVoucher((prev) => ({ ...prev, image: file }));
+  const handleEdit = (voucher) => {
+    setEditVoucher({
+      ...voucher,
+      time_start: voucher.time_start ? voucher.time_start.slice(0, 16) : "",
+      time_end: voucher.time_end ? voucher.time_end.slice(0, 16) : "",
+    });
+    setShowEditModal(true);
   };
 
-  // Submit new voucher
-  const handleSubmit = async () => {
+  const handleAdd = async () => {
+    setIsLoading(true);
     const formData = new FormData();
     Object.entries(newVoucher).forEach(([key, value]) => {
-      formData.append(key, value);
+      if (key === "image_voucher" && value instanceof File) {
+        formData.append("image", value);
+      } else if (value !== null && value !== "") {
+        formData.append(key, value);
+      }
     });
 
-    setIsLoading(true); // Bật trạng thái loading
     try {
-      await axios.post(
-        "http://localhost:5000/v1/api/voucher/create_voucher",
+      const response = await axiosInstance.post(
+        "voucher/create_voucher",
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
-      alert("Voucher added successfully!");
-      setShowModal(false);
+      setVouchers([...vouchers, response.data.metadata]);
+      setShowAddModal(false);
       setNewVoucher({
         voucher_name: "",
         voucher_description: "",
-        voucher_type: "percent",
+        voucher_type: "deduct_money",
         voucher_value: 0,
         voucher_code: "",
-        image: null,
         time_start: "",
         time_end: "",
-        quantity: "",
+        quantity: 0,
         min_order_value: 0,
-        is_active: true,
         is_voucher_new_user: false,
+        user: [],
+        image_voucher: null,
       });
-      fetchVouchers();
     } catch (error) {
-      console.error("Error creating voucher:", error);
-      alert("Failed to add voucher.");
+      console.error("Error adding voucher:", error);
     } finally {
-      setIsLoading(false); // Tắt trạng thái loading
+      setIsLoading(false);
     }
   };
 
-  const filteredItems = (voucher || []).filter((item) =>
-    (item?.voucher_code || "")
-      .toLowerCase()
-      .includes((searchItem || "").toLowerCase())
+  const handleSubmitEdit = async () => {
+    setIsLoading(true);
+    const formData = new FormData();
+    Object.entries(editVoucher).forEach(([key, value]) => {
+      if (key === "image_voucher" && value instanceof File) {
+        formData.append("image", value);
+      } else if (value !== null && value !== "") {
+        formData.append(key, value);
+      }
+    });
+
+    try {
+      const response = await axiosInstance.put(
+        `voucher/update_voucher?_id=${editVoucher._id}`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+      setVouchers((prevVouchers) =>
+        prevVouchers.map((voucher) =>
+          voucher._id === response.data.metadata._id
+            ? response.data.metadata
+            : voucher
+        )
+      );
+      setShowEditModal(false);
+      setEditVoucher({
+        _id: "",
+        voucher_name: "",
+        voucher_description: "",
+        voucher_type: "deduct_money",
+        voucher_value: 0,
+        voucher_code: "",
+        time_start: "",
+        time_end: "",
+        quantity: 0,
+        min_order_value: 0,
+        is_voucher_new_user: false,
+        user: [],
+        image_voucher: null,
+      });
+    } catch (error) {
+      console.error("Error updating voucher:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filteredItems = vouchers.filter(
+    (voucher) =>
+      voucher.is_active === true &&
+      voucher.voucher_code &&
+      voucher.voucher_code.toLowerCase().includes(searchItem.toLowerCase())
   );
-  console.log("aaa", filteredItems);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      vouchers.forEach((voucher) => {
+        const expiryDate = new Date(voucher.time_end);
+        if (voucher.is_active && expiryDate <= now) {
+          handleDelete(voucher._id);
+        }
+      });
+    }, 60000); // Kiểm tra mỗi 60 giây
+
+    return () => clearInterval(interval); // Dọn dẹp khi component unmount
+  }, [vouchers]);
+
   return (
     <div style={styles.container}>
       <input
@@ -191,39 +242,52 @@ export default function Vouchers() {
         placeholder="Search..."
         value={searchItem}
         onChange={(e) => setSearchItem(e.target.value)}
-        style={styles.searchInPut}
+        style={styles.searchInput}
       />
+
+      <button onClick={() => setShowAddModal(true)} style={styles.addButton}>
+        Add New Voucher
+      </button>
+
       <table style={styles.table}>
         <thead>
           <tr>
             <th style={{ ...styles.thTd, ...styles.th }}>STT</th>
+            <th style={{ ...styles.thTd, ...styles.th }}>Image</th>
             <th style={{ ...styles.thTd, ...styles.th }}>Voucher name</th>
             <th style={{ ...styles.thTd, ...styles.th }}>Voucher type</th>
             <th style={{ ...styles.thTd, ...styles.th }}>Voucher value</th>
             <th style={{ ...styles.thTd, ...styles.th }}>Voucher code</th>
             <th style={{ ...styles.thTd, ...styles.th }}>MFG Date</th>
             <th style={{ ...styles.thTd, ...styles.th }}>EXP Date</th>
-            <th style={{ ...styles.thTd, ...styles.th, marginLeft: "30px" }}>
-              Action
+            <th style={{ ...styles.thTd, ...styles.th }}>
+              Voucher description
             </th>
+            <th style={{ ...styles.thTd, ...styles.th }}>Actions</th>
+            <th style={{ ...styles.thTd, ...styles.th }}>Actions</th>
           </tr>
         </thead>
         <tbody>
           {filteredItems.map((voucher, index) => (
             <tr key={voucher._id}>
               <td style={styles.thTd}>{index + 1}</td>
-
-              <td
-                onClick={() => getDetailVoucher(voucher._id)}
-                style={{ ...styles.thTd, color: "Brown", fontWeight: 700 }}
-              >
-                {voucher.voucher_name}
+              <td style={styles.thTd}>
+                {voucher.image_voucher && (
+                  <img
+                    src={voucher.image_voucher.url || "default-image-url.jpg"}
+                    alt="Voucher"
+                    style={styles.imageStyle}
+                  />
+                )}
               </td>
+              <td style={styles.thTd}>{voucher.voucher_name}</td>
               <td style={styles.thTd}>{voucher.voucher_type}</td>
-              <td style={styles.thTd}>{voucher.voucher_value}</td>
-              <td style={{ ...styles.thTd, color: "red", fontWeight: 700 }}>
-                {voucher.voucher_code}
+              <td style={styles.thTd}>
+                {voucher.voucher_type === "percent"
+                  ? `${voucher.voucher_value}%`
+                  : `${voucher.voucher_value} VND`}
               </td>
+              <td style={styles.thTd}>{voucher.voucher_code}</td>
               <td style={styles.thTd}>
                 {new Date(voucher.time_start).toLocaleDateString()}
               </td>
@@ -231,264 +295,295 @@ export default function Vouchers() {
                 {new Date(voucher.time_end).toLocaleDateString()}
               </td>
               <td style={styles.thTd}>
+                <p style={styles.description}>{voucher.voucher_description}</p>
+              </td>
+              <td style={styles.thTd}>
                 <button
-                  style={styles.editBtn}
-                  onClick={() => openEditModal(voucher)}
+                  onClick={() => handleEdit(voucher)}
+                  style={styles.editButton}
                 >
-                  <FontAwesomeIcon icon={faEdit} /> Edit
+                  Edit
                 </button>
+              </td>
+              <td style={styles.thTd}>
                 <button
-                  style={styles.deleteBtn}
-                  onClick={() => confirmDelete(voucher._id)}
+                  onClick={() => handleDelete(voucher._id)}
+                  style={styles.deleteButton}
                 >
-                  <FontAwesomeIcon icon={faTrash} /> Delete
+                  Delete
                 </button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
-      <div style={styles.addButton} onClick={() => setShowModal(true)}>
-        +
-      </div>
-      <DeleteDialog
-        open={isDeleteDialogOpen}
-        onClose={() => setIsDeleteDialogOpen(false)}
-        onConfirm={handleDeleteVoucher}
-      />
 
-      {showModal && (
-        <div style={styles.modal}>
-          <h2 style={styles.modalHeader}>Add Voucher</h2>
-          <input
-            type="text"
-            name="voucher_name"
-            placeholder="Voucher Name"
-            value={newVoucher.voucher_name}
-            onChange={handleChange}
-            style={styles.input}
-          />
-          <textarea
-            name="voucher_description"
-            placeholder="Description"
-            value={newVoucher.voucher_description}
-            onChange={handleChange}
-            style={styles.textarea}
-          />
-          <select
-            name="voucher_type"
-            value={newVoucher.voucher_type}
-            onChange={handleChange}
-            style={styles.select}
-          >
-            <option value="percent">Percent</option>
-            <option value="deduct_money">Deduct Money</option>
-            <option value="complete_coin">Complete Coin</option>
-          </select>
-          <input
-            type="number"
-            name="voucher_value"
-            placeholder="Value"
-            value={newVoucher.voucher_value}
-            onChange={handleChange}
-            style={styles.input}
-          />
-          <input
-            type="text"
-            name="voucher_code"
-            placeholder="Code"
-            value={newVoucher.voucher_code}
-            onChange={handleChange}
-            style={styles.input}
-          />
-          <input
-            type="file"
-            name="image"
-            onChange={handleImageUpload}
-            style={styles.input}
-          />
-          <input
-            type="datetime-local"
-            name="time_start"
-            value={newVoucher.time_start}
-            onChange={handleChange}
-            style={styles.input}
-          />
-          <input
-            type="datetime-local"
-            name="time_end"
-            value={newVoucher.time_end}
-            onChange={handleChange}
-            style={styles.input}
-          />
-          <input
-            type="number"
-            name="quantity"
-            placeholder="Quantity"
-            value={newVoucher.quantity}
-            onChange={handleChange}
-            style={styles.input}
-          />
-          <input
-            type="number"
-            name="min_order_value"
-            placeholder="Min Order Value"
-            value={newVoucher.min_order_value}
-            onChange={handleChange}
-            style={styles.input}
-          />
-          <div style={styles.buttonContainer}>
+      {showAddModal && (
+        <div style={styles.backdrop} onClick={() => setShowAddModal(false)}>
+          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <h2 style={styles.modalHeader}>Add Voucher</h2>
+            <input
+              type="text"
+              name="voucher_name"
+              placeholder="Voucher Name"
+              value={newVoucher.voucher_name}
+              onChange={handleAddChange}
+              style={styles.input}
+            />
+            <textarea
+              name="voucher_description"
+              placeholder="Voucher Description"
+              value={newVoucher.voucher_description}
+              onChange={handleAddChange}
+              style={styles.textarea}
+            />
+            <input
+              type="file"
+              name="image_voucher"
+              onChange={handleAddChange}
+              style={styles.input}
+            />
+            <input
+              type="text"
+              name="voucher_code"
+              placeholder="Voucher Code"
+              value={newVoucher.voucher_code}
+              onChange={handleAddChange}
+              style={styles.input}
+            />
+            <div style={styles.timeInputContainer}>
+              <input
+                type="datetime-local"
+                name="time_start"
+                value={newVoucher.time_start}
+                onChange={handleAddChange}
+                style={styles.input}
+              />
+              <input
+                type="datetime-local"
+                name="time_end"
+                value={newVoucher.time_end}
+                onChange={handleAddChange}
+                style={styles.input}
+              />
+            </div>
+            <input
+              type="number"
+              name="voucher_value"
+              placeholder="Voucher Value"
+              value={newVoucher.voucher_value}
+              onChange={handleAddChange}
+              style={styles.input}
+            />
+            <input
+              type="number"
+              name="quantity"
+              placeholder="Quantity"
+              value={newVoucher.quantity}
+              onChange={handleAddChange}
+              style={styles.input}
+            />
+            <input
+              type="number"
+              name="min_order_value"
+              placeholder="Min Order Value"
+              value={newVoucher.min_order_value}
+              onChange={handleAddChange}
+              style={styles.input}
+            />
+            <label>
+              New User Only
+              <input
+                type="checkbox"
+                name="is_voucher_new_user"
+                checked={newVoucher.is_voucher_new_user}
+                onChange={handleAddChange}
+                style={styles.checkbox}
+              />
+            </label>
+            {newVoucher.is_voucher_new_user && (
+              <select
+                name="user"
+                value={newVoucher.user}
+                onChange={handleAddChange}
+                style={styles.input}
+              >
+                <option value="">Select User (If new user only)</option>
+                {users.map((user) => (
+                  <option key={user._id} value={user._id}>
+                    {`["${user.email}"]`}
+                  </option>
+                ))}
+              </select>
+            )}
+            <label>
+              Voucher Type
+              <select
+                name="voucher_type"
+                value={newVoucher.voucher_type}
+                onChange={handleAddChange}
+                style={styles.input}
+              >
+                <option value="deduct_money">Deduct Money</option>
+                <option value="percent">Percent</option>
+              </select>
+            </label>
+
             <button
-              style={styles.saveButton}
-              onClick={handleSubmit}
+              onClick={handleAdd}
+              style={styles.submitButton}
               disabled={isLoading}
             >
-              {isLoading ? (
-                <div style={styles.loadingSpinner}></div> // Vòng tròn loading
-              ) : (
-                "Save"
-              )}
+              {isLoading ? <div className="spinner"></div> : "Add Voucher"}
             </button>
             <button
+              onClick={() => setShowAddModal(false)}
               style={styles.cancelButton}
-              onClick={() => setShowModal(false)}
             >
               Cancel
             </button>
           </div>
         </div>
       )}
-      {showViewModal && detailVoucher && (
-        <div style={styles.modal}>
-          <h2 style={styles.modalHeader}>Voucher Details</h2>
-          <div style={styles.content}>
-            <p>
-              <strong>Name:</strong> {detailVoucher.voucher_name}
-            </p>
-            <p>
-              <strong>Description:</strong>{" "}
-              {detailVoucher.voucher_description.length > 50
-                ? `${detailVoucher.voucher_description.slice(0, 50)}...`
-                : detailVoucher.voucher_description}
-            </p>
-            <p>
-              <strong>Type:</strong> {detailVoucher.voucher_type}
-            </p>
-            <p>
-              <strong>Value:</strong> {detailVoucher.voucher_value}
-            </p>
-            <p>
-              <strong>Code:</strong> {detailVoucher.voucher_code}
-            </p>
-            <p>
-              <strong>Start Date:</strong>{" "}
-              {new Date(detailVoucher.time_start).toLocaleDateString()}
-            </p>
-            <p>
-              <strong>End Date:</strong>{" "}
-              {new Date(detailVoucher.time_end).toLocaleDateString()}
-            </p>
-            <p>
-              <strong>Quantity:</strong> {detailVoucher.quantity}
-            </p>
-          </div>
-          <button
-            style={styles.closeButton}
-            onClick={() => setViewShowModal(false)}
-          >
-            Close
-          </button>
-        </div>
-      )}
-      {isEditModalOpen && editVoucher && (
-        <div style={styles.modal}>
-          <h2 style={styles.modalHeader}>Edit Voucher</h2>
-          <input
-            type="text"
-            name="voucher_name"
-            placeholder="Voucher Name"
-            value={editVoucher.voucher_name}
-            onChange={handleEditChange}
-            style={styles.input}
-          />
-          <textarea
-            name="voucher_description"
-            placeholder="Description"
-            value={editVoucher.voucher_description}
-            onChange={handleEditChange}
-            style={styles.textarea}
-          />
-          <select
-            name="voucher_type"
-            value={editVoucher.voucher_type}
-            onChange={handleEditChange}
-            style={styles.select}
-          >
-            <option value="percent">Percent</option>
-            <option value="deduct_money">Deduct Money</option>
-            <option value="complete_coin">Complete Coin</option>
-          </select>
-          <input
-            type="number"
-            name="voucher_value"
-            placeholder="Value"
-            value={editVoucher.voucher_value}
-            onChange={handleEditChange}
-            style={styles.input}
-          />
-          <input
-            type="text"
-            name="voucher_code"
-            placeholder="Code"
-            value={editVoucher.voucher_code}
-            onChange={handleEditChange}
-            style={styles.input}
-          />
-          <input
-            type="datetime-local"
-            name="time_start"
-            value={editVoucher.time_start}
-            onChange={handleEditChange}
-            style={styles.input}
-          />
-          <input
-            type="datetime-local"
-            name="time_end"
-            value={editVoucher.time_end}
-            onChange={handleEditChange}
-            style={styles.input}
-          />
-          <input
-            type="number"
-            name="quantity"
-            placeholder="Quantity"
-            value={editVoucher.quantity}
-            onChange={handleEditChange}
-            style={styles.input}
-          />
-          <input
-            type="number"
-            name="min_order_value"
-            placeholder="Min Order Value"
-            value={editVoucher.min_order_value}
-            onChange={handleEditChange}
-            style={styles.input}
-          />
-          <div style={styles.buttonContainer}>
+      {showEditModal && (
+        <div style={styles.backdrop} onClick={() => setShowEditModal(false)}>
+          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <h2 style={styles.modalHeader}>Edit Voucher</h2>
+            <input
+              type="text"
+              name="voucher_name"
+              placeholder="Voucher Name"
+              value={editVoucher.voucher_name}
+              onChange={handleEditChange}
+              style={styles.input}
+            />
+            <textarea
+              name="voucher_description"
+              placeholder="Voucher Description"
+              value={editVoucher.voucher_description}
+              onChange={handleEditChange}
+              style={styles.textarea}
+            />
+
+            {editVoucher.image_voucher && editVoucher.image_voucher.url && (
+              <div>
+                <img
+                  src={editVoucher.image_voucher.url}
+                  alt="Current Voucher"
+                  style={styles.imageStyle}
+                />
+              </div>
+            )}
+            <input
+              type="file"
+              name="image_voucher"
+              onChange={handleEditChange}
+              style={styles.input}
+            />
+            <input
+              type="text"
+              name="voucher_code"
+              placeholder="Voucher Code"
+              value={editVoucher.voucher_code}
+              onChange={handleEditChange}
+              style={styles.input}
+            />
+            <div style={styles.timeInputContainer}>
+              <input
+                type="datetime-local"
+                name="time_start"
+                value={editVoucher.time_start}
+                onChange={handleEditChange}
+                style={styles.input}
+              />
+              <input
+                type="datetime-local"
+                name="time_end"
+                value={editVoucher.time_end}
+                onChange={handleEditChange}
+                style={styles.input}
+              />
+            </div>
+            <input
+              type="number"
+              name="voucher_value"
+              placeholder="Voucher Value"
+              value={editVoucher.voucher_value}
+              onChange={handleEditChange}
+              style={styles.input}
+            />
+            <input
+              type="number"
+              name="quantity"
+              placeholder="Quantity"
+              value={editVoucher.quantity}
+              onChange={handleEditChange}
+              style={styles.input}
+            />
+            <input
+              type="number"
+              name="min_order_value"
+              placeholder="Min Order Value"
+              value={editVoucher.min_order_value}
+              onChange={handleEditChange}
+              style={styles.input}
+            />
+            <label>
+              New User Only
+              <input
+                type="checkbox"
+                name="is_voucher_new_user"
+                checked={editVoucher.is_voucher_new_user}
+                onChange={handleEditChange}
+                style={styles.checkbox}
+              />
+            </label>
+
+            {editVoucher.is_voucher_new_user && (
+              <select
+                name="user"
+                value={editVoucher.user || ""}
+                onChange={(e) => {
+                  const selectedUserId = e.target.value;
+                  console.log("Selected User ID:", selectedUserId);
+                  setEditVoucher((prev) => ({
+                    ...prev,
+                    user: selectedUserId,
+                  }));
+                }}
+                style={styles.input}
+              >
+                {users.map((user) => (
+                  <option key={user._id} value={user._id}>
+                    {`["${user.email}"]`}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            <label>
+              Voucher Type
+              <select
+                name="voucher_type"
+                value={editVoucher.voucher_type}
+                onChange={handleEditChange}
+                style={styles.input}
+              >
+                <option value="deduct_money">Deduct Money</option>
+                <option value="percent">Percent</option>
+              </select>
+            </label>
+
             <button
-              style={styles.saveButton}
-              onClick={handleEditSubmit}
+              onClick={handleSubmitEdit}
+              style={styles.submitButton}
               disabled={isLoading}
             >
-              {isLoading ? (
-                <div style={styles.loadingSpinner}></div> // Vòng tròn loading
-              ) : (
-                "Save"
-              )}
+              {isLoading ? <div className="spinner"></div> : "Save Voucher"}
             </button>
             <button
+              onClick={() => setShowEditModal(false)}
               style={styles.cancelButton}
-              onClick={() => setIsEditModalOpen(false)}
             >
               Cancel
             </button>
@@ -500,33 +595,41 @@ export default function Vouchers() {
 }
 
 const styles = {
-  container: { padding: "20px" },
-  table: { width: "100%", borderCollapse: "collapse", marginTop: "20px" },
-  thTd: { padding: "10px", textAlign: "left", borderBottom: "1px solid #ddd" },
-  th: { backgroundColor: "#f5f5f5" },
-  searchInPut: {
-    padding: "8px",
+  container: {
+    width: "100%",
+    margin: "0 auto",
+    paddingTop: "20px",
+  },
+  searchInput: {
+    display: "flow",
     width: "45%",
+    padding: "10px",
+    marginBottom: "20px",
+    fontSize: "16px",
+    padding: "8px 8px 8px 30px",
     borderRadius: "20px",
     outline: "none",
-    fontSize: "14px",
-    marginBottom: "30px",
   },
-  addButton: {
-    position: "fixed",
-    bottom: "20px",
-    right: "20px",
-    backgroundColor: "#28a745",
-    color: "white",
-    fontSize: "24px",
+  table: {
+    width: "100%",
+    borderCollapse: "collapse",
+  },
+  thTd: {
+    padding: "10px",
+    textAlign: "center",
+    border: "1px solid #ddd",
+  },
+  th: {
+    backgroundColor: "#f4f4f4",
+  },
+  imageStyle: {
     width: "50px",
     height: "50px",
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    cursor: "pointer",
-    boxShadow: "0 0 10px rgba(0, 0, 0, 0.2)",
+  },
+  description: {
+    maxWidth: "200px",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
   },
   modal: {
     position: "fixed",
@@ -535,147 +638,91 @@ const styles = {
     transform: "translate(-50%, -50%)",
     backgroundColor: "white",
     padding: "30px",
-    borderRadius: "15px",
-    boxShadow: "0 8px 30px rgba(0, 0, 0, 0.3)", // Tăng độ bóng đổ
-    zIndex: 1000,
-    width: "500px",
-    border: "2px solid red", // Thêm đường viền nhẹ để nổi bật
+    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
+    zIndex: 10,
   },
   modalHeader: {
-    fontSize: "24px",
-    fontWeight: "bold",
     marginBottom: "20px",
-    textAlign: "center",
-    color: "#333",
+    fontSize: "24px",
   },
   input: {
     width: "100%",
-    padding: "10px",
-    marginBottom: "15px",
-    borderRadius: "8px",
+    padding: "4px",
+    marginBottom: "10px",
+    fontSize: "16px",
+    borderRadius: "5px",
     border: "1px solid #ccc",
-    fontSize: "14px",
-    outline: "none",
   },
   textarea: {
     width: "100%",
     padding: "10px",
-    marginBottom: "15px",
-    borderRadius: "8px",
-    border: "1px solid #ccc",
-    fontSize: "14px",
-    outline: "none",
-    resize: "none",
+    marginBottom: "10px",
+    fontSize: "16px",
     minHeight: "80px",
-  },
-  select: {
-    width: "100%",
-    padding: "10px",
-    marginBottom: "15px",
-    borderRadius: "8px",
+    borderRadius: "5px",
     border: "1px solid #ccc",
-    fontSize: "14px",
-    outline: "none",
   },
-  buttonContainer: {
+  timeInputContainer: {
     display: "flex",
     justifyContent: "space-between",
-    marginTop: "20px",
   },
-  saveButton: {
-    backgroundColor: "#28a745",
+  checkbox: {
+    marginLeft: "10px",
+    marginRight: "15px",
+  },
+  submitButton: {
+    backgroundColor: "#4CAF50",
     color: "white",
     padding: "10px 20px",
-    borderRadius: "8px",
     border: "none",
     cursor: "pointer",
-    fontSize: "14px",
+    marginLeft: "40px",
+    borderRadius: "5px",
   },
   cancelButton: {
-    backgroundColor: "#dc3545",
+    backgroundColor: "#f44336",
     color: "white",
-    padding: "10px 20px",
-    borderRadius: "8px",
+    padding: "10px 40px",
     border: "none",
     cursor: "pointer",
-    fontSize: "14px",
-  },
-  modal: {
-    position: "fixed",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    backgroundColor: "#ffffff",
-    padding: "30px",
-    borderRadius: "15px",
-    zIndex: 1000,
-    border: "1px solid #ddd",
-    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-    width: "90%",
-    maxWidth: "500px",
-    fontFamily: "Arial, sans-serif",
-    color: "#333",
-  },
-  modalHeader: {
-    fontSize: "24px",
-    marginBottom: "20px",
-    textAlign: "center",
-    color: "#555",
-  },
-  content: {
-    lineHeight: "1.6",
-    marginBottom: "20px",
-  },
-  closeButton: {
-    backgroundColor: "#007BFF",
-    color: "#fff",
-    padding: "10px 20px",
-    border: "none",
+    marginLeft: "20px",
     borderRadius: "5px",
-    cursor: "pointer",
-    textAlign: "center",
-    width: "100%",
-    fontWeight: "bold",
   },
-  delButton: {
-    backgroundColor: "#dc3545",
+  addButton: {
+    padding: "10px 20px",
+    backgroundColor: "#4CAF50",
     color: "white",
     border: "none",
-    padding: "8px 12px",
-    borderRadius: "4px",
     cursor: "pointer",
-  },
-  loadingSpinner: {
-    width: "24px",
-    height: "24px",
-    border: "4px solid #f3f3f3",
-    borderTop: "4px solid #3498db",
-    borderRadius: "50%",
-    animation: "spin 2s linear infinite",
+    marginBottom: "20px",
+    borderRadius: "5px",
   },
   editButton: {
-    backgroundColor: "blue",
+    borderRadius: "10px",
+    backgroundColor: "#4CAF50",
     color: "white",
+    padding: "5px 10px",
     border: "none",
-    padding: "8px 12px",
-    borderRadius: "4px",
     cursor: "pointer",
   },
-  deleteBtn: {
-    backgroundColor: "red",
+  deleteButton: {
+    borderRadius: "10px",
+    backgroundColor: "#f44336",
     color: "white",
-    border: "none",
     padding: "5px 10px",
+    border: "none",
     cursor: "pointer",
-    borderRadius: "5px",
   },
-  editBtn: {
-    marginRight: "10px",
-    backgroundColor: "#007bff",
-    color: "white",
-    border: "none",
-    padding: "5px 10px",
-    cursor: "pointer",
-    borderRadius: "5px",
+  backdrop: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100vw",
+    height: "100vh",
+    backgroundColor: "rgba(0, 0, 0, 0.5)", // Màu nền mờ
+    zIndex: 999, // Đảm bảo lớp phủ ở trên
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
   },
 };

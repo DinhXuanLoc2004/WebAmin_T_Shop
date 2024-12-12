@@ -8,6 +8,7 @@ import { Modal, Button, Row, Col } from "react-bootstrap";
 
 const AddProduct = ({ onProductAdded }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoading1, setIsLoading1] = useState(false);
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [newProductData, setNewProductData] = useState({
     name_product: "",
@@ -81,7 +82,7 @@ const AddProduct = ({ onProductAdded }) => {
       setEditedCategoryName(selectedCategoryToAdd.name_category);
       setNewProductData({
         ...newProductData,
-        category_id: selectedCategoryToAdd._id, // Ghi lại _id vào category_id
+        category_id: selectedCategoryToAdd._id,
       });
       setIsEditing(true);
     }
@@ -133,7 +134,7 @@ const AddProduct = ({ onProductAdded }) => {
   };
 
   const handleAddProduct = async () => {
-    setIsLoading(true);
+    setIsLoading1(true);
     try {
       const formData = new FormData();
       formData.append("name_product", newProductData.name_product);
@@ -149,7 +150,6 @@ const AddProduct = ({ onProductAdded }) => {
       for (let index = 0; index < newProductData.images.length; index++) {
         const file = newProductData.images[index];
         formData.append("images", file);
-        console.log("ccccccccccc", file);
       }
 
       for (let [key, value] of formData.entries()) {
@@ -174,7 +174,7 @@ const AddProduct = ({ onProductAdded }) => {
     } catch (error) {
       console.error("Error adding product:", error);
     } finally {
-      setIsLoading(false);
+      setIsLoading1(false);
     }
   };
 
@@ -203,7 +203,7 @@ const AddProduct = ({ onProductAdded }) => {
       ...newProductData,
       images: updatedFiles,
     });
-  };
+  }; 
 
   const handleAddVariant = () => {
     setNewProductData({
@@ -217,6 +217,16 @@ const AddProduct = ({ onProductAdded }) => {
           image_product_color_id: "",
         },
       ],
+    });
+  };
+
+  const handleRemoveVariant = (index) => {
+    const updatedVariants = newProductData.product_variants.filter(
+      (variant, i) => i !== index
+    );
+    setNewProductData({
+      ...newProductData,
+      product_variants: updatedVariants,
     });
   };
 
@@ -276,7 +286,12 @@ const AddProduct = ({ onProductAdded }) => {
         Product
       </button>
 
-      <Modal show={isAddProductOpen} onHide={closeAddProductModal} centered style={isModalVisible ? { opacity: 0.5 } : {}}>
+      <Modal
+        show={isAddProductOpen}
+        onHide={closeAddProductModal}
+        centered
+        style={isModalVisible ? { opacity: 0.5 } : {}}
+      >
         <Modal.Header closeButton style={styles.modalHeader}>
           <Modal.Title style={styles.modalTitle}>Add New Product</Modal.Title>
         </Modal.Header>
@@ -321,7 +336,11 @@ const AddProduct = ({ onProductAdded }) => {
                 />
               </div>
 
-              <Modal style={{alignContent: "center"}} show={isModalVisible} onHide={toggleModal}>
+              <Modal
+                style={{ alignContent: "center" }}
+                show={isModalVisible}
+                onHide={toggleModal}
+              >
                 <Modal.Header closeButton>
                   <Modal.Title>Select category</Modal.Title>
                 </Modal.Header>
@@ -460,6 +479,7 @@ const AddProduct = ({ onProductAdded }) => {
                       style={styles.imagePreview}
                     />
                     <button
+                    type="button"
                       style={styles.removeButton}
                       onClick={() => handleRemoveImage(index)}
                     >
@@ -517,6 +537,7 @@ const AddProduct = ({ onProductAdded }) => {
                         </option>
                       ))}
                     </select>
+
                     <div
                       style={{
                         background: "#EEEEEE",
@@ -628,21 +649,37 @@ const AddProduct = ({ onProductAdded }) => {
                       min="1"
                     />
                     <input
-                      type="number"
+                      type="text"
                       placeholder="Enter price"
-                      value={variant.price}
-                      onChange={(e) =>
-                        handleVariantChange(index, "price", e.target.value)
+                      value={
+                        variant.price
+                          ? new Intl.NumberFormat("vi-VN", {
+                              style: "currency",
+                              currency: "VND",
+                            }).format(variant.price)
+                          : ""
                       }
+                      onChange={(e) => {
+                        const rawValue = e.target.value.replace(/[^\d]/g, "");
+                        handleVariantChange(
+                          index,
+                          "price",
+                          rawValue ? parseInt(rawValue, 10) : ""
+                        );
+                      }}
                       style={styles.input}
-                      min="0.01"
                     />
+
                     <div>
-                      {newProductData.product_variants.length >= 2 && (
-                        <hr
-                          style={{ margin: "20px 0", border: "1px solid #ccc" }}
-                        />
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveVariant(index)}
+                        style={styles.buttonRemoveVariant}
+                      >
+                        Remove Variant
+                      </button>
+
+                      <hr style={{ border: "1px solid black" }} />
                     </div>
                   </div>
                 ))}
@@ -653,7 +690,6 @@ const AddProduct = ({ onProductAdded }) => {
                 >
                   Add Variant
                 </button>
-                <div></div>
               </div>
             </div>
           </form>
@@ -662,9 +698,9 @@ const AddProduct = ({ onProductAdded }) => {
           <button
             onClick={handleAddProduct}
             style={styles.button}
-            disabled={isLoading}
+            disabled={isLoading1}
           >
-            {isLoading ? <div className="spinner"></div> : "Save"}
+            {isLoading1 ? <div className="spinner"></div> : "Save"}
           </button>
 
           <button
@@ -748,6 +784,14 @@ const styles = {
     border: "none",
     borderRadius: "5px",
   },
+  buttonRemoveVariant: {
+    backgroundColor: "red",
+    color: "#fff",
+    padding: "8px 16px",
+    marginTop: "10px",
+    border: "none",
+    borderRadius: "5px",
+  },
   input: {
     width: "100%",
     padding: "10px",
@@ -772,12 +816,6 @@ const styles = {
   inputFile: {
     padding: "5px",
     display: "none",
-  },
-  imagePreviewContainer: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "10px",
-    marginTop: "10px",
   },
   imagePreview: {
     width: "100px",

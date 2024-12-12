@@ -6,6 +6,7 @@ import { faEdit, faTrash, faPlus } from "@fortawesome/free-solid-svg-icons";
 import AddSubCategoryModal from "../component/AddSubCategoryModal";
 import AddMainCategoryModal from "../component/AddMainCategoryModal";
 import AddChildCategoryModal from "../component/AddChildCategoryModal";
+import debounce from "lodash.debounce";
 
 export default function ManageCategory() {
   //eidt
@@ -146,7 +147,7 @@ export default function ManageCategory() {
 
     const interval = setInterval(() => {
       fetchMainCategories();
-    }, 5000); // Cập nhật mỗi 5 giây
+    }, 1000); // Cập nhật mỗi 5 giây
 
     // Dọn dẹp interval khi component bị hủy
     return () => clearInterval(interval);
@@ -255,7 +256,10 @@ export default function ManageCategory() {
             }
             onClick={() => handleCategoryClick(category)}
           >
-            {category.name_category}
+              <span style={{ fontSize: 20, fontFamily: "initial" }}>
+              {category.name_category}
+            </span>
+
             <FontAwesomeIcon
               icon={faEdit}
               style={styles.icon}
@@ -299,7 +303,9 @@ export default function ManageCategory() {
               }
               onClick={() => handleSubCategoryClick(subCategory)}
             >
+               <span style={{ fontSize: 20, fontFamily: "initial" }}>
               {subCategory.name_category}
+            </span>
 
               <FontAwesomeIcon
                 icon={faEdit}
@@ -324,10 +330,10 @@ export default function ManageCategory() {
         isOpen={isSubModalOpen}
         style
         onRequestClose={closeSubModal}
-        selectedCategory={selectedCategory} // Truyền danh mục đời 1 đã chọn
-        onSubCategoryAdded={(newSubCategory) =>
-          setSubCategories([...subCategories, newSubCategory])
-        }
+        selectedCategory={selectedCategory}
+        onSubCategoryAdded={(newSubCategory) => {
+          setSubCategories([...subCategories, newSubCategory]);
+        }}
       />
 
       {/* Navigation Row 3 */}
@@ -345,7 +351,9 @@ export default function ManageCategory() {
             }
             onClick={() => handleChildCategoryClick(childCategory)}
           >
-            {childCategory.name_category}
+            <span style={{ fontSize: 20, fontFamily: "initial" }}>
+              {childCategory.name_category}
+            </span>
 
             <FontAwesomeIcon
               icon={faEdit}
@@ -371,27 +379,13 @@ export default function ManageCategory() {
         onRequestClose={closeChildModal}
         selectedCategory={selectedCategory}
         selectedSubCategory={selectedSubCategory}
-        onChildCategoryAdded={(newChildCategory) =>
-          setChildCategories([...childCategories, newChildCategory])
-        }
+        onChildCategoryAdded={(newChildCategory) => {
+          setChildCategories((prevCategories) => [
+            ...prevCategories,
+            newChildCategory,
+          ]); // Cập nhật ngay danh sách
+        }}
       />
-
-      {/* Render màn hình tương ứng */}
-      <div style={styles.screen}>
-        <div style={styles.containerShowProducts}>
-          {/* Chỉ hiển thị sản phẩm nếu đã chọn category con */}
-          {filteredProducts.map((prod) => (
-            <ShowProductsContainer
-              key={prod._id} // Sử dụng _id làm key
-              image={prod.thumb}
-              name={prod.name_product}
-              price={prod.price_min} // Hiển thị giá tối thiểu
-              quantity={prod.inventory_quantity}
-              brand={prod.name_brand}
-            />
-          ))}
-        </div>
-      </div>
       {isUpdateModalOpen && (
         <div style={styles.modal}>
           <div style={styles.modalContent}>

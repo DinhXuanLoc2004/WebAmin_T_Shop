@@ -3,6 +3,7 @@ import axios from "axios";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faTimes, faEdit } from "@fortawesome/free-solid-svg-icons";
 import Modal from "react-modal";
+import DeleteDialog from "./DeleteDialog";
 
 Modal.setAppElement("#root");
 
@@ -17,6 +18,9 @@ export default function ProductOptions() {
   const [error, setError] = useState("");
   const [editingSizeId, setEditingSizeId] = useState(null);
   const [editingColorId, setEditingColorId] = useState(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null); // Tracks the target to delete
+  const [deleteType, setDeleteType] = useState(null);
 
   useEffect(() => {
     fetchColors();
@@ -41,6 +45,7 @@ export default function ProductOptions() {
         `http://localhost:5000/v1/api/size/delete_size?_id=${sizeId}`
       );
       setSizes(sizes.filter((size) => size._id !== sizeId));
+      setIsDeleteDialogOpen(false);
     } catch (error) {
       console.error("Error deleting size:", error);
     }
@@ -79,9 +84,12 @@ export default function ProductOptions() {
     setError("");
 
     try {
-      await axios.post(`http://localhost:5000/v1/api/size/update_size?_id=${editingSizeId}`, {
-        size: newSize,
-      });
+      await axios.post(
+        `http://localhost:5000/v1/api/size/update_size?_id=${editingSizeId}`,
+        {
+          size: newSize,
+        }
+      );
       fetchSizes();
       resetModal();
     } catch (error) {
@@ -120,6 +128,7 @@ export default function ProductOptions() {
         `http://localhost:5000/v1/api/color/detele_color?_id=${colorId}`
       );
       fetchColors();
+      setIsDeleteDialogOpen(false);
     } catch (error) {
       console.error("Error deleting color:", error);
     }
@@ -127,68 +136,80 @@ export default function ProductOptions() {
 
   const handleAddColor = async () => {
     if (!newHexColor.trim() || !newNameColor.trim()) {
-        setError("Both hex color and name color are required.");
-        return;
+      setError("Both hex color and name color are required.");
+      return;
     }
     setError("");
 
     try {
-        await axios.post("http://localhost:5000/v1/api/color/add_color", {
-            hex_color: newHexColor,
-            name_color: newNameColor,
-        });
-        fetchColors();
-        resetModal();
+      await axios.post("http://localhost:5000/v1/api/color/add_color", {
+        hex_color: newHexColor,
+        name_color: newNameColor,
+      });
+      fetchColors();
+      resetModal();
     } catch (error) {
-        if (error.response) {
-            const errorMessage = error.response.data.message;
-            if (errorMessage === "Invalid hex color format. Expected format: #000000") {
-                setError("Invalid hex color format. Expected format: #000000");
-            } else if (errorMessage === "Invalid name color format. Only letters are allowed.") {
-                setError("Invalid name color format. Only letters are allowed.");
-            } else if (errorMessage === "Hex color already exists.") {
-                setError("Hex color already exists!");
-            } else {
-                console.error("Error adding color:", error);
-            }
+      if (error.response) {
+        const errorMessage = error.response.data.message;
+        if (
+          errorMessage === "Invalid hex color format. Expected format: #000000"
+        ) {
+          setError("Invalid hex color format. Expected format: #000000");
+        } else if (
+          errorMessage ===
+          "Invalid name color format. Only letters are allowed."
+        ) {
+          setError("Invalid name color format. Only letters are allowed.");
+        } else if (errorMessage === "Hex color already exists.") {
+          setError("Hex color already exists!");
         } else {
-            console.error("Error adding color:", error);
+          console.error("Error adding color:", error);
         }
+      } else {
+        console.error("Error adding color:", error);
+      }
     }
-};
+  };
 
-const handleUpdateColor = async () => {
+  const handleUpdateColor = async () => {
     if (!newHexColor.trim() || !newNameColor.trim()) {
-        setError("Both hex color and name color are required.");
-        return;
+      setError("Both hex color and name color are required.");
+      return;
     }
     setError("");
 
     try {
-        await axios.post(`http://localhost:5000/v1/api/color/update_color?_id=${editingColorId}`, {
-            hex_color: newHexColor,
-            name_color: newNameColor,
-        });
-        fetchColors();
-        resetModal();
-    } catch (error) {
-        if (error.response) {
-            const errorMessage = error.response.data.message;
-            if (errorMessage === "Invalid hex color format. Expected format: #000000") {
-                setError("Invalid hex color format. Expected format: #000000");
-            } else if (errorMessage === "Invalid name color format. Only letters are allowed.") {
-                setError("Invalid name color format. Only letters are allowed.");
-            } else if (errorMessage === "Hex color already exists.") {
-                setError("Hex color already exists!");
-            } else {
-                console.error("Error updating color:", error);
-            }
-        } else {
-            console.error("Error updating color:", error);
+      await axios.post(
+        `http://localhost:5000/v1/api/color/update_color?_id=${editingColorId}`,
+        {
+          hex_color: newHexColor,
+          name_color: newNameColor,
         }
+      );
+      fetchColors();
+      resetModal();
+    } catch (error) {
+      if (error.response) {
+        const errorMessage = error.response.data.message;
+        if (
+          errorMessage === "Invalid hex color format. Expected format: #000000"
+        ) {
+          setError("Invalid hex color format. Expected format: #000000");
+        } else if (
+          errorMessage ===
+          "Invalid name color format. Only letters are allowed."
+        ) {
+          setError("Invalid name color format. Only letters are allowed.");
+        } else if (errorMessage === "Hex color already exists.") {
+          setError("Hex color already exists!");
+        } else {
+          console.error("Error updating color:", error);
+        }
+      } else {
+        console.error("Error updating color:", error);
+      }
     }
-};
-
+  };
 
   const openEditColorModal = (colorId, currentHexColor, currentNameColor) => {
     setEditingColorId(colorId);
@@ -207,8 +228,35 @@ const handleUpdateColor = async () => {
     setIsAddColorModalOpen(false);
   };
 
+  const openDeleteDialog = (id, type) => {
+    setDeleteTarget(id);
+    setDeleteType(type);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (deleteType === "size") {
+      handleDeleteSize(deleteTarget);
+    } else if (deleteType === "color") {
+      handleDeleteColor(deleteTarget);
+    }
+    setIsDeleteDialogOpen(false);
+  };
+
+  const cancelDelete = () => {
+    setDeleteTarget(null);
+    setDeleteType(null);
+    setIsDeleteDialogOpen(false);
+  };
+
   return (
     <div style={styles.selectionContainer}>
+      <DeleteDialog
+        open={isDeleteDialogOpen}
+        onClose={cancelDelete}
+        onConfirm={confirmDelete}
+      />
+
       <Modal
         isOpen={isAddColorModalOpen}
         onRequestClose={resetModal}
@@ -265,7 +313,7 @@ const handleUpdateColor = async () => {
           value={newSize}
           onChange={(e) => {
             setNewSize(e.target.value);
-            if (error) setError(""); // Xóa lỗi khi bắt đầu nhập
+            if (error) setError(""); 
           }}
           placeholder="Enter size"
           style={styles.modalInput}
@@ -311,7 +359,7 @@ const handleUpdateColor = async () => {
               ></button>
               <button
                 style={styles.deleteButton}
-                onClick={() => handleDeleteColor(color._id)}
+                onClick={() => openDeleteDialog(color._id, "color")}
               >
                 <FontAwesomeIcon icon={faTimes} />
               </button>
@@ -339,7 +387,7 @@ const handleUpdateColor = async () => {
               </button>
               <button
                 style={styles.deleteButton}
-                onClick={() => handleDeleteSize(size._id)}
+                onClick={() => openDeleteDialog(size._id, "size")}
               >
                 <FontAwesomeIcon icon={faTimes} />
               </button>

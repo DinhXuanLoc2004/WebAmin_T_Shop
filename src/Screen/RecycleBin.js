@@ -12,52 +12,48 @@ const RecycleBin = () => {
   const [colorAndSizes, setColorAndSizes] = useState([]);
   const [selectedTab, setSelectedTab] = useState(0); // State to track selected tab
 
+  const fetchData = async () => {
+    try {
+      // Fetch deleted products
+      const productResult = await axios.post(
+        `http://localhost:5000/v1/api/product/get_all_products?is_delete=${true}`
+      );
+      setProducts(productResult.data.metadata.products);
+
+      // Fetch deleted brands
+      const brandResult = await axios.get(
+        `http://localhost:5000/v1/api/brand/get_all_brands?is_delete=${true}`
+      );
+      setBrands(brandResult.data.metadata);
+
+      // Other fetch logic for categories and colorAndSizes can go here...
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
+  // Fetch data on component mount
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch deleted products
-        const productResult = await axios.post(
-          `http://localhost:5000/v1/api/product/get_all_products?is_delete=${true}`
-        );
-        setProducts(productResult.data.metadata.products);
-
-        // Fetch deleted brands
-        const brandResult = await axios.get(
-          `http://localhost:5000/v1/api/brand/get_all_brands?is_delete=${true}`
-        );
-        setBrands(brandResult.data.metadata);
-
-        // // Fetch deleted categories
-        // const categoryResult = await axios.get(
-        //   "http://localhost:5000/v1/api/category/get_all_categories"
-        // );
-        // setCategories(categoryResult.data.metadata.categories);
-        // console.log(categoryResult.data.metadata.categories)
-
-        // // Fetch deleted colors and sizes
-        // const colorSizeResult = await axios.post(
-        //   "http://localhost:5000/v1/api/color_size/get_all_color_sizes",
-        //   { is_delete: true }
-        // );
-        // setColorAndSizes(colorSizeResult.data.metadata.color_sizes);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
     fetchData();
   }, []);
 
   const handleRestoreProduct = async (productId) => {
     try {
       await axios.delete(
-        `http://localhost:5000/v1/api/product/restore_product?product_id=${productId}`
+        `http://localhost:5000/v1/api/product/toggle_delete_product?_id=${productId}`
       );
-      // Refresh product list after restore
-      const result = await axios.post(
-        "http://localhost:5000/v1/api/product/get_all_products",
-        { is_delete: true }
+      fetchData();
+    } catch (error) {
+      console.error("Error restoring product:", error);
+    }
+  };
+
+  const handleRestoreBrand = async (brandId) => {
+    try {
+      await axios.delete(
+        `https://backenddatn-production.up.railway.app/v1/api/brand/toggle_delete_brand?_id=${brandId}`
       );
-      setProducts(result.data.metadata.products);
+      fetchData();
     } catch (error) {
       console.error("Error restoring product:", error);
     }
@@ -154,13 +150,17 @@ const RecycleBin = () => {
                 <tr key={index} style={styles.tr}>
                   <td style={styles.thTdTable}>{index + 1}</td>
                   <td style={styles.thTd}>
-                    <img src={brand.image_brand.url} alt="Product" style={styles.img} />
+                    <img
+                      src={brand.image_brand.url}
+                      alt="Product"
+                      style={styles.img}
+                    />
                   </td>
                   <td style={styles.thTdTable}>{brand.name_brand}</td>
                   <td style={styles.thTdTable}>
                     <button
                       style={styles.restoreBtn}
-                      onClick={() => handleRestoreProduct()}
+                      onClick={() => handleRestoreBrand(brand._id)}
                     >
                       <FontAwesomeIcon icon={faTrashRestore} /> Restore
                     </button>
@@ -189,7 +189,11 @@ const RecycleBin = () => {
                 <tr key={index} style={styles.tr}>
                   <td style={styles.thTdTable}>{index + 1}</td>
                   <td style={styles.thTd}>
-                    <img src={category.image_category.url} alt="Product" style={styles.img} />
+                    <img
+                      src={category.image_category.url}
+                      alt="Product"
+                      style={styles.img}
+                    />
                   </td>
                   <td style={styles.thTdTable}>{category.name_category}</td>
                   <td style={styles.thTdTable}>{category.depth}</td>

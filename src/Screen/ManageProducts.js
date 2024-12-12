@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faTrash,
-  faEdit,
   faChevronLeft,
   faChevronRight,
   faStar,
@@ -19,6 +18,7 @@ import EditProduct from "../component/EditProduct";
 
 export default function ManageProducts() {
   const [products, setProducts] = useState([]);
+  const [searchItem, setSearchItem] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -100,9 +100,21 @@ export default function ManageProducts() {
     setIsDeleteDialogOpen(true);
   };
 
+  const filteredItems = products.filter((product) =>
+    product.name_product.toLowerCase().includes(searchItem.toLowerCase())
+  );
+
   return (
-    <div style={styles.container}>
+    <div style={styles.container(isDeleteDialogOpen)}>
       <ColorAndSize />
+
+      <input
+        type="text"
+        placeholder="Search by name product"
+        value={searchItem}
+        onChange={(e) => setSearchItem(e.target.value)}
+        style={styles.searchInput}
+      />
 
       <AddProduct onProductAdded={fetchProducts} />
 
@@ -127,7 +139,7 @@ export default function ManageProducts() {
           </tr>
         </thead>
         <tbody>
-          {products.map((product, index) => (
+          {filteredItems.map((product, index) => (
             <tr key={index} style={{ cursor: "pointer" }}>
               <td style={styles.thTdTable}>{index + 1}</td>
               <td style={styles.thTd}>
@@ -151,9 +163,18 @@ export default function ManageProducts() {
                 </span>
               </td>
               <td style={styles.thTdTable}>{product.inventory_quantity}</td>
-              <td style={styles.thTdTable}>${product.price_min}</td>
+              <td style={styles.thTdTable}>
+                {new Intl.NumberFormat("vi-VN", {
+                  style: "currency",
+                  currency: "VND",
+                }).format(product.price_min)}
+              </td>
+
               <td style={styles.thTd}>
-                <EditProduct productId={product._id} />
+                <EditProduct
+                  productId={product._id}
+                  onProductUpdated={fetchProducts}
+                />
                 <button
                   style={styles.deleteBtn}
                   onClick={(e) => handleDeleteButtonClick(product._id, e)}
@@ -368,9 +389,12 @@ const styles = {
     objectFit: "cover",
     borderRadius: "5px",
   },
-  container: {
+  container: (isBlurred) => ({
     padding: "20px",
-  },
+    filter: isBlurred ? "blur(5px)" : "none",
+    pointerEvents: isBlurred ? "none" : "auto", // Ngăn tương tác khi mờ
+    transition: "filter 0.3s ease", // Hiệu ứng chuyển đổi mượt
+  }),
   table: {
     width: "100%",
     borderCollapse: "collapse",
@@ -528,5 +552,13 @@ const styles = {
   modalFooter: {
     padding: "15px",
     textAlign: "right",
+  },
+  searchInput: {
+    padding: "8px 8px 8px 30px",
+    width: "45%",
+    borderRadius: "20px",
+    outline: "none",
+    fontSize: "14px",
+    marginTop: "10px",
   },
 };

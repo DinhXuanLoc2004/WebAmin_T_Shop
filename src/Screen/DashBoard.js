@@ -64,6 +64,37 @@ const ChartContainer = styled.div`
 `;
 
 export default function DashBoard() {
+  const [users, setUsers] = useState({ user: 0 });
+  const [order, setOrders] = useState({ order: 0 });
+
+  useEffect(() => {
+    fetchDataUser();
+    fetchDataOrders();
+  }, []);
+  const fetchDataUser = async () => {
+    try {
+      const response = await axios.get(
+        "http://localhost:5000/v1/api/auth/get_all_users"
+      );
+
+      const userCount = response.data.metadata?.length || 0;
+      setUsers({ user: userCount }); // Cập nhật số lượng user
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    }
+  };
+  const fetchDataOrders = async () => {
+    try {
+      const response = await axios.get(
+        "http://localhost:5000/v1/api/order/get_all_orders"
+      );
+
+      const orderCount = response.data.metadata?.length || 0;
+      setOrders({ order: orderCount }); // Cập nhật số lượng order
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+    }
+  };
   const data = [
     { month: "January", sales: 80 },
     { month: "February", sales: 20 },
@@ -86,7 +117,7 @@ export default function DashBoard() {
     const fetchData = async () => {
       try {
         const response = await axios.post(
-          "http://localhost:5000/v1/api/product/get_all_products"
+          "http://localhost:5000/v1/api/product/get_all_products?get_top_trendings=5"
         );
 
         const productsData = response.data?.metadata?.products || [];
@@ -121,7 +152,7 @@ export default function DashBoard() {
           >
             <div>
               <StatDescription style={styles.title}>Total User</StatDescription>
-              <StatNumber>{dashBoardData.user}</StatNumber>
+              <StatNumber>{users.user}</StatNumber>
             </div>
             <div style={{ ...styles.iconView, backgroundColor: "#FFCCFF	" }}>
               <FontAwesomeIcon
@@ -143,7 +174,7 @@ export default function DashBoard() {
               <StatDescription style={styles.title}>
                 Total Orders
               </StatDescription>
-              <StatNumber>{dashBoardData.order}</StatNumber>
+              <StatNumber>{order.order}</StatNumber>
             </div>
             <div style={{ ...styles.iconView, backgroundColor: "#FFFF66	" }}>
               <FontAwesomeIcon
@@ -320,8 +351,7 @@ const styles = {
     padding: 20,
     border: "1px solid #ddd",
     backgroundColor: "#f9f9f9",
-    width:1800
-
+    width: 1800,
   },
   containerShowProducts: {
     display: "flex",
@@ -425,7 +455,11 @@ const styles = {
     fontWeight: "600",
     margin: "10px 0",
     color: "#444",
+    whiteSpace: "nowrap", // Ngăn không cho văn bản xuống dòng
+    overflow: "hidden", // Ẩn văn bản vượt quá chiều rộng của phần tử
+    textOverflow: "ellipsis", // Thêm dấu "..." khi văn bản bị cắt
   },
+
   category: {
     fontSize: "14px",
     color: "#777",
