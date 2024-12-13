@@ -174,7 +174,7 @@ export default function ManageProducts() {
               </td>
               <td style={styles.thTdTable}>{product.discount}%</td>
               <td style={styles.thTd}>
-                <button style={{ border: "none", background: "white"}}>
+                <button style={{ border: "none", background: "white" }}>
                   <EditProduct
                     productId={product._id}
                     onProductUpdated={fetchProducts}
@@ -248,30 +248,35 @@ export default function ManageProducts() {
               <div>
                 <h1>{selectedProduct.name_product}</h1>
                 <div>
-                  <div style={{ display: "flex" }}>
-                    <h4 style={{ fontWeight: "bold" }}>
-                      {new Intl.NumberFormat("vi-VN", {
-                        style: "currency",
-                        currency: "VND",
-                      }).format(
-                        selectedProduct.price -
-                          selectedProduct.price *
-                            (selectedProduct.discount / 100)
-                      )}
-                    </h4>
-                    <h6 style={{ marginLeft: "10px" }}>
-                      <span
-                        style={{
-                          textDecoration: "line-through",
-                          color: "gray",
-                        }}
-                      >
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex" }}>
+                      <h4 style={{ fontWeight: "bold" }}>
                         {new Intl.NumberFormat("vi-VN", {
                           style: "currency",
                           currency: "VND",
-                        }).format(selectedProduct.price)}
-                      </span>
-                    </h6>
+                        }).format(
+                          selectedProduct.price -
+                            selectedProduct.price *
+                              (selectedProduct.discount / 100)
+                        )}
+                      </h4>
+                      <h6 style={{ marginLeft: "10px" }}>
+                        <span
+                          style={{
+                            textDecoration: "line-through",
+                            color: "gray",
+                          }}
+                        >
+                          {new Intl.NumberFormat("vi-VN", {
+                            style: "currency",
+                            currency: "VND",
+                          }).format(selectedProduct.price)}
+                        </span>
+                      </h6>
+                    </div>
+                    <div>
+                      Sold: {selectedProduct.total_orders} products
+                    </div>
                   </div>
                   <div style={styles.rateReviewsContainer}>
                     <p style={{ display: "flex", alignItems: "center" }}>
@@ -300,7 +305,7 @@ export default function ManageProducts() {
                           icon={faComment}
                           style={{ marginRight: "5px" }}
                         />
-                        {selectedProduct.countReview} Reviews
+                        {selectedProduct.countReviews} Reviews
                       </span>
                     </p>
                   </div>
