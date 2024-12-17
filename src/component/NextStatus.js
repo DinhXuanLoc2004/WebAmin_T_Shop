@@ -5,7 +5,7 @@ import Typography from "@mui/material/Typography";
 import Modal from "@mui/material/Modal";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 
-export default function DeleteDialog({ open, onClose, onConfirm }) {
+export default function NextStatus({ open, onClose, onConfirm }) {
   const style = {
     container: {
       position: "absolute",
@@ -17,7 +17,6 @@ export default function DeleteDialog({ open, onClose, onConfirm }) {
       padding: "20px",
       boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.1)",
       height: "160px",
-      width: "280px",
     },
     title: {
       size: "18px",
@@ -50,7 +49,7 @@ export default function DeleteDialog({ open, onClose, onConfirm }) {
           <text style={style.title}>Delete</text>
         </Typography>
         <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-          <text style={style.description}> Do you want to delete it?</text>
+          <text style={style.description}> Do you want to move to the next state?</text>
         </Typography>
         <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
           <Button onClick={onClose}>No</Button>

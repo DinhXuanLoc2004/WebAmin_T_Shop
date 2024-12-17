@@ -7,7 +7,7 @@ import {
   faCoins,
   faCalendarDays,
 } from "@fortawesome/free-solid-svg-icons";
-import Select from "react-select";
+import NextStatus from "../component/NextStatus";
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
@@ -16,110 +16,8 @@ export default function Orders() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
-  const [isModalOpen1, setIsModalOpen1] = useState(false);
   const [currentOrder, setCurrentOrder] = useState(null);
-  const [address, setAddress] = useState({
-    province_name: "",
-    district_name: "",
-    ward_name: "",
-    specific_address: "",
-  });
-
-  const [provinces, setProvinces] = useState([]);
-  const [districts, setDistricts] = useState([]);
-  const [wards, setWards] = useState([]);
-
-  useEffect(() => {
-    // Fetch provinces once on mount
-    const fetchProvinces = async () => {
-      try {
-        const response = await axios.get(
-          "http://localhost:5000/v1/api/shipping_address/get_all_province"
-        );
-        setProvinces(
-          response.data.metadata.map((province) => ({
-            value: province.ProvinceID,
-            label: province.ProvinceName,
-          }))
-        );
-      } catch (error) {
-        console.error("Error fetching provinces:", error);
-      }
-    };
-    fetchProvinces();
-  }, []);
-
-  const handleProvinceChange = async (selectedOption) => {
-    if (!selectedOption) {
-      setDistricts([]);
-      setWards([]);
-      setAddress((prev) => ({
-        ...prev,
-        province_name: "",
-        district_name: "",
-        ward_name: "",
-      }));
-      return;
-    }
-
-    setAddress((prev) => ({
-      ...prev,
-      province_name: selectedOption.label,
-      district_name: "",
-      ward_name: "",
-    }));
-    setDistricts([]);
-    setWards([]);
-
-    try {
-      const response = await axios.get(
-        `http://localhost:5000/v1/api/shipping_address/get_districts?province_id=${selectedOption.value}`
-      );
-      console.log(selectedOption.value);
-      setDistricts(
-        response.data.metadata.map((district) => ({
-          value: district.DistrictID,
-          label: district.DistrictName,
-        }))
-      );
-    } catch (error) {
-      console.error("Error fetching districts:", error);
-    }
-  };
-
-  const handleDistrictChange = async (selectedOption) => {
-    if (!selectedOption) {
-      setWards([]);
-      setAddress((prev) => ({
-        ...prev,
-        district_name: "",
-        ward_name: "",
-      }));
-      return;
-    }
-
-    setAddress((prev) => ({
-      ...prev,
-      district_name: selectedOption.label,
-      ward_name: "",
-    }));
-    setWards([]);
-
-    try {
-      const response = await axios.get(
-        `http://localhost:5000/v1/api/shipping_address/get_wards?district_id=${selectedOption.value}`
-      );
-      console.log(selectedOption.value);
-      setWards(
-        response.data.metadata.map((ward) => ({
-          value: ward.WardCode,
-          label: ward.WardName,
-        }))
-      );
-    } catch (error) {
-      console.error("Error fetching wards:", error);
-    }
-  };
+  const [openDialog, setOpenDialog] = useState(false);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -128,6 +26,7 @@ export default function Orders() {
           "http://localhost:5000/v1/api/order/get_all_orders"
         );
         setOrders(response.data.metadata);
+        console.log(response.data.metadata);
       } catch (error) {
         console.error("Error fetching orders:", error);
       } finally {
@@ -172,75 +71,49 @@ export default function Orders() {
   const statusColors = {
     Confirming: "blue",
     Confirmed: "green",
-    Delivering: "yellow",
+    Delivering: "#FFFF66",
     "Delivered Successfully": "green",
     "Delivery Failed": "red",
     Canceled: "red",
     Unpaid: "red",
   };
 
-  const handleOpenModal = (order) => {
-    setCurrentOrder(order);
-    setIsModalOpen1(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen1(false);
-    setAddress({
-      province_name: "",
-      district_name: "",
-      ward_name: "",
-      specific_address: "",
-    });
-  };
-
   const nextStatusMap = {
     Confirming: ["Confirmed"],
     Confirmed: ["Delivering"],
-    // Delivering: ["Delivered Successfully", "Delivery Failed"],
     Delivering: ["Delivered Successfully"],
-  };
-
-  const handleUpdateLocation = async () => {
-    if (!currentOrder) return;
-
-    const { _id: order_id, order_status: status } = currentOrder;
-
-    try {
-      const response = await axios.put(
-        "http://localhost:5000/v1/api/order/update_status_order",
-        {
-          order_id,
-          status,
-          ...address,
-        }
-      );
-
-      console.log("Update successful:", response.data);
-      setOrders((prevOrders) =>
-        prevOrders.map((order) =>
-          order._id === order_id
-            ? {
-                ...order,
-                province_name: address.province_name,
-                district_name: address.district_name,
-                ward_name: address.ward_name,
-                specific_address: address.specific_address,
-              }
-            : order
-        )
-      );
-
-      handleCloseModal();
-    } catch (error) {
-      console.error("Error updating status order:", error);
-    }
   };
 
   const handleUpdateStatus = async (nextStatus) => {
     if (!currentOrder) return;
 
-    const { _id: order_id } = currentOrder;
+    const { _id: order_id, order_status } = currentOrder;
+
+    if (!nextStatus) {
+      console.log("No next status available for this order.");
+      return;
+    }
+
+    // Check if the order status is the last status in the sequence
+    if (!nextStatusMap[order_status]) {
+      console.log("This order is already in the final status.");
+      return;
+    }
+
+    try {
+      // Open the confirmation dialog
+      setOpenDialog(true);
+      setCurrentOrder(currentOrder); // Save current order to be updated after confirmation
+    } catch (error) {
+      console.error("Error updating status order:", error);
+    }
+  };
+
+  const handleConfirmUpdateStatus = async () => {
+    if (!currentOrder) return;
+
+    const { _id: order_id, order_status } = currentOrder;
+    const nextStatus = nextStatusMap[order_status]?.[0];
 
     if (!nextStatus) {
       console.log("No next status available for this order.");
@@ -248,7 +121,6 @@ export default function Orders() {
     }
 
     try {
-      // Gửi yêu cầu cập nhật trạng thái đến server
       await axios.put(
         "http://localhost:5000/v1/api/order/update_status_order",
         {
@@ -257,7 +129,7 @@ export default function Orders() {
         }
       );
 
-      // Cập nhật trạng thái trong danh sách đơn hàng
+      // Update status in the list of orders
       setOrders((prevOrders) =>
         prevOrders.map((order) =>
           order._id === order_id
@@ -266,14 +138,21 @@ export default function Orders() {
         )
       );
 
-      handleCloseModal();
+      // Update currentOrder
+      setCurrentOrder((prev) =>
+        orders.find((order) => order._id === currentOrder._id)
+      );
+
+      console.log("Status updated successfully!");
     } catch (error) {
       console.error("Error updating status order:", error);
     }
+
+    setOpenDialog(false);
   };
 
   return (
-    <div style={styles.container}>
+    <div style={styles.container(openDialog)}>
       <input
         type="text"
         placeholder="Search by ID Order"
@@ -287,24 +166,27 @@ export default function Orders() {
         <table style={styles.table}>
           <thead>
             <tr>
+              <th style={{ ...styles.thTd, ...styles.th }}>STT</th>
               <th style={{ ...styles.thTd, ...styles.th }}>ID Order</th>
               <th style={{ ...styles.thTd, ...styles.th }}>Name</th>
               <th style={{ ...styles.thTd, ...styles.th }}>Phone</th>
               <th style={{ ...styles.thTd, ...styles.th }}>Order time</th>
               <th style={{ ...styles.thTd, ...styles.th }}>Leadtime</th>
               <th style={{ ...styles.thTd, ...styles.th }}>Total Amount</th>
+              <th style={{ ...styles.thTd, ...styles.th }}>Payment Method</th>
               <th style={{ ...styles.thTd, ...styles.th }}>Status</th>
               {/* <th style={{ ...styles.thTd, ...styles.th }}>Actions</th> */}
               <th style={{ ...styles.thTd, ...styles.th }}>Note </th>
             </tr>
           </thead>
           <tbody>
-            {filteredItems.map((order) => (
+            {filteredItems.map((order, index) => (
               <tr
-                key={order._id}
+                key={index}
                 onClick={() => handleRowClick(order._id)}
                 style={styles.row}
               >
+                <td style={styles.thTdTable}>{index + 1}</td>
                 <td style={styles.thTdTable}>{order._id.slice(-4)}</td>
                 <td style={styles.thTdTable}>{order.full_name}</td>
                 <td style={styles.thTdTable}>{order.phone}</td>
@@ -320,17 +202,19 @@ export default function Orders() {
                     currency: "VND",
                   }).format(order.total_amount)}
                 </td>
+                <td style={styles.thTdTable}>{order.payment_method}</td>
                 <td style={styles.thTdTable}>
                   <select
                     style={{
                       backgroundColor: statusColors[order.order_status],
-                      color: "white",
+                      color:
+                        order.order_status === "Delivering" ? "black" : "white",
                       border: "none",
                       borderRadius: "4px",
                       padding: "5px 10px",
-                      width: "75%",
+                      width: "100%",
                       cursor: [
-                        "Delivery Failed",
+                        "Delivered Successfully",
                         "Canceled",
                         "Unpaid",
                       ].includes(order.order_status)
@@ -339,14 +223,14 @@ export default function Orders() {
                     }}
                     value={order.order_status}
                     disabled={[
-                      "Delivery Failed",
+                      "Delivered Successfully",
                       "Canceled",
                       "Unpaid",
-                    ].includes(order.order_status)} // Không cho phép chọn nếu trạng thái không tịnh tiến
-                    onChange={(e) => {
-                      const nextStatus = e.target.value;
-                      setCurrentOrder(order); // Lưu thông tin order hiện tại
-                      handleUpdateStatus(nextStatus); // Gọi hàm cập nhật
+                    ].includes(order.order_status)}
+                    onChange={() => {
+                      const nextStatus = nextStatusMap[order.order_status]?.[0];
+                      setCurrentOrder(order);
+                      handleUpdateStatus(nextStatus);
                     }}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -363,33 +247,18 @@ export default function Orders() {
                   </select>
                 </td>
 
-                {/* <td style={styles.thTdTable}>
-                  {order.order_status === "Delivering" && (
-                    <button
-                      style={{
-                        backgroundColor: "gray",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "4px",
-                        padding: "5px 10px",
-                        cursor: "pointer",
-                      }}
-                      onClick={(e) => {
-                        handleOpenModal(order);
-                        e.stopPropagation();
-                      }}
-                    >
-                      Update Location
-                    </button>
-                  )}
-                </td> */}
-
                 <td style={styles.thTdTable}>{order.cancellation_reason}</td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
+
+      <NextStatus
+        open={openDialog}
+        onClose={() => setOpenDialog(false)}
+        onConfirm={handleConfirmUpdateStatus} // Call the confirmation function
+      />
 
       {isModalOpen && (
         <div
@@ -508,29 +377,36 @@ export default function Orders() {
                         }).format(
                           selectedOrder.products_order.reduce(
                             (total, product) =>
-                              total + (product.price -
-                                product.price * (product.discount / 100)) * product.quantity,
+                              total +
+                              (product.price -
+                                product.price * (product.discount / 100)) *
+                                product.quantity,
                             0
                           )
                         )}
                       </div>
                       <div>
-                        +{new Intl.NumberFormat("vi-VN", {
+                        +
+                        {new Intl.NumberFormat("vi-VN", {
                           style: "currency",
                           currency: "VND",
                         }).format(selectedOrder.delivery_fee)}
                       </div>
-                      <div style={{marginBottom: "10px"}}>
-                        -{new Intl.NumberFormat("vi-VN", {
+                      <div style={{ marginBottom: "10px" }}>
+                        -
+                        {new Intl.NumberFormat("vi-VN", {
                           style: "currency",
                           currency: "VND",
                         }).format(
                           selectedOrder.products_order.reduce(
                             (total, product) =>
-                              total + (product.price -
-                                product.price * (product.discount / 100)) * product.quantity,
-                            0 
-                          ) * (selectedOrder.value_voucher / 100)
+                              total +
+                              (product.price -
+                                product.price * (product.discount / 100)) *
+                                product.quantity,
+                            0
+                          ) *
+                            (selectedOrder.value_voucher / 100)
                         )}
                       </div>
                     </div>
@@ -564,84 +440,17 @@ export default function Orders() {
           </div>
         </div>
       )}
-      {isModalOpen1 && (
-        <div style={styles.modalOverlay} onClick={closeModal}>
-          {/* <div style={styles.modalContent}>
-            <h3>Update Location</h3>
-            <div>
-              <label>Province</label>
-              <Select
-                style={styles.modalInput}
-                options={provinces}
-                onChange={handleProvinceChange}
-                value={provinces.find(
-                  (province) => province.label === address.province_name
-                )}
-              />
-            </div>
-            <div>
-              <label>District</label>
-              <Select
-                style={styles.modalInput}
-                options={districts}
-                onChange={handleDistrictChange}
-                value={districts.find(
-                  (district) => district.label === address.district_name
-                )}
-              />
-            </div>
-            <div>
-              <label>Ward</label>
-              <Select
-                style={styles.modalInput}
-                options={wards}
-                onChange={(selectedOption) =>
-                  setAddress((prev) => ({
-                    ...prev,
-                    ward_name: selectedOption ? selectedOption.label : "",
-                  }))
-                }
-                value={wards.find((ward) => ward.label === address.ward_name)}
-              />
-            </div>
-            <div>
-              <label>Specific Address</label>
-              <input
-                style={styles.modalInput}
-                type="text"
-                value={address.specific_address}
-                onChange={(e) =>
-                  setAddress((prev) => ({
-                    ...prev,
-                    specific_address: e.target.value,
-                  }))
-                }
-              />
-            </div>
-            <button
-              style={{
-                ...styles.modalButton,
-                background: "blue",
-                color: "white",
-              }}
-              onClick={handleUpdateLocation}
-            >
-              Save
-            </button>
-            <button style={styles.modalButton} onClick={handleCloseModal}>
-              Close
-            </button>
-          </div> */}
-        </div>
-      )}
     </div>
   );
 }
 
 const styles = {
-  container: {
+  container: (isBlurred) => ({
     padding: "20px",
-  },
+    filter: isBlurred ? "blur(5px)" : "none",
+    pointerEvents: isBlurred ? "none" : "auto",
+    transition: "filter 0.3s ease",
+  }),
   table: {
     width: "100%",
     borderCollapse: "collapse",

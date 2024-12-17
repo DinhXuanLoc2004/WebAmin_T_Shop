@@ -67,7 +67,7 @@ export default function ProductOptions() {
     } catch (error) {
       if (
         error.response &&
-        error.response.data.message === "Size already exists!"
+        error.response.data.message === "Size existed!"
       ) {
         setError("Size already exists!");
       } else {
@@ -95,7 +95,7 @@ export default function ProductOptions() {
     } catch (error) {
       if (
         error.response &&
-        error.response.data.message === "Size already exists!"
+        error.response.data.message === "Size existed!"
       ) {
         setError("Size already exists!");
       } else {
@@ -151,17 +151,15 @@ export default function ProductOptions() {
     } catch (error) {
       if (error.response) {
         const errorMessage = error.response.data.message;
+        console.log(error.response.data.message)
         if (
-          errorMessage === "Invalid hex color format. Expected format: #000000"
+          errorMessage === "Hex color invalid!"
         ) {
           setError("Invalid hex color format. Expected format: #000000");
-        } else if (
-          errorMessage ===
-          "Invalid name color format. Only letters are allowed."
-        ) {
+        } else if (errorMessage === "Invalid name color format. Only letters are allowed.") {
           setError("Invalid name color format. Only letters are allowed.");
-        } else if (errorMessage === "Hex color already exists.") {
-          setError("Hex color already exists!");
+        } else if (errorMessage === "Hex color existed!") {
+          setError("Hex color exists!");
         } else {
           console.error("Error adding color:", error);
         }
@@ -191,6 +189,7 @@ export default function ProductOptions() {
     } catch (error) {
       if (error.response) {
         const errorMessage = error.response.data.message;
+        console.log(error.response.data.message)
         if (
           errorMessage === "Invalid hex color format. Expected format: #000000"
         ) {
@@ -200,7 +199,7 @@ export default function ProductOptions() {
           "Invalid name color format. Only letters are allowed."
         ) {
           setError("Invalid name color format. Only letters are allowed.");
-        } else if (errorMessage === "Hex color already exists.") {
+        } else if (errorMessage === "Hex color existed!") {
           setError("Hex color already exists!");
         } else {
           console.error("Error updating color:", error);

@@ -5,6 +5,7 @@ import axiosInstance from "../helper/axiosIntercreptor";
 const SalesActive = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [detailSale, setDetailSale] = useState(null);
+  const [products, setProducts] = useState([]);
   const [salesActive, setSalesActive] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -43,9 +44,25 @@ const SalesActive = () => {
       setLoading(false);
     }
   };
+  const fetchProducts = async () => {
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/v1/api/product/get_all_products",
+        {
+          params: {
+            is_delete: false,
+          },
+        }
+      );
+      setProducts(response.data.metadata); // Giả sử response chứa data.metadata
+    } catch (err) {
+      setError("Error fetching products.");
+    }
+  };
 
   useEffect(() => {
     fetchSales();
+    fetchProducts();
   }, []);
 
   if (loading) {
@@ -58,6 +75,7 @@ const SalesActive = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
     if (isEditMode) {
       setEditsale((prevState) => ({
         ...prevState,
@@ -264,27 +282,39 @@ const SalesActive = () => {
     setShowDetailModal(false);
   };
 
-  const handleEditSaleDetails = (sale) => {
-    const formatDate = (date) => {
-      const d = new Date(date);
-      return d.toISOString().slice(0, 16); 
-    };
+  const handleEditSaleDetails = async (sale) => {
+    try {
+      const formatDate = (date) => {
+        const d = new Date(date);
+        return d.toISOString().slice(0, 16);
+      };
+      const response = await axios.get(
+        `http://localhost:5000/v1/api/sale/get_products_sale?sale_id=${sale._id}`
+      );
+      const products = response.data.metadata || [];
+      const productIds = products.map((product) => product._id);
+ console.log('id productIds',productIds)
 
-    setEditsale({
-      discount: sale.discount,
-      time_start: formatDate(sale.time_start),
-      time_end: formatDate(sale.time_end),
-      product_ids: "",
-      name_sale: sale.name_sale,
-      image: { file: null, url: sale.thumb || "" }, 
-    });
-    setEditSaleId(sale._id);
-    setIsEditMode(true);
-    setShowEditModal(true);
+      setEditsale({
+        discount: sale.discount,
+        time_start: formatDate(sale.time_start),
+        time_end: formatDate(sale.time_end),
+        product_ids: JSON.stringify(productIds),
+        name_sale: sale.name_sale,
+        image: { file: null, url: sale.thumb || "" },
+      });
+
+      setEditSaleId(sale._id);
+      setIsEditMode(true);
+      setShowEditModal(true);
+    } catch (error) {
+      console.error("Error fetching product ids:", error);
+      alert("Failed to fetch product ids. Please try again later.");
+    }
   };
 
   const filteredSales = salesActive
-    .filter((sale) => sale.is_active) 
+    .filter((sale) => sale.is_active)
     .filter((sale) =>
       sale.name_sale.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -304,12 +334,12 @@ const SalesActive = () => {
   const handleViewSaleDetail = async (saleId) => {
     try {
       const response = await axiosInstance.get(
-        `http://localhost:5000/v1/api/sale/get_sale_update_detail?sale_id=${saleId}`
+        `sale/get_sale_update_detail?sale_id=${saleId}`
       );
-      if (response.data && response.data.metadata) {
-        console.log("Sale Detail:", response.data.metadata); 
-        setDetailSale(response.data.metadata); 
-        setShowDetailModal(true); 
+      if (response.data.metadata) {
+        console.log("Sale Detail:", response.data.metadata);
+        setDetailSale(response.data.metadata);
+        setShowDetailModal(true);
       } else {
         alert("No sale details found.");
       }
@@ -320,7 +350,7 @@ const SalesActive = () => {
   };
 
   return (
-    <div>
+    <div style={styles.container}>
       <input
         type="text"
         placeholder="Search by Sale Name..."
@@ -345,6 +375,9 @@ const SalesActive = () => {
             ...(showAddModal && styles.modalVisible),
           }}
         >
+          <button onClick={handleCancel} style={styles.closeButton}>
+            &times;
+          </button>
           <div style={styles.modalContent}>
             <h2>Add New Sale</h2>
             <div>
@@ -388,14 +421,31 @@ const SalesActive = () => {
               />
             </div>
             <div>
-              <label>Product IDs (JSON format):</label>
-              <textarea
+              <label>Select product:</label>
+              <select
                 name="product_ids"
+                style={{ padding: "8px", fontSize: "14px" ,marginLeft: "10px"}}
                 value={newSale.product_ids}
                 onChange={handleChange}
-                style={styles.input}
-              />
+              >
+                <option value="">Select Product</option>
+                {loading ? (
+                  <option disabled>Loading products...</option>
+                ) : products.products.length > 0 ? (
+                  products.products.map((product) => (
+                    <option
+                      key={product._id}
+                      value={JSON.stringify([product._id])}
+                    >
+                      {product.name_product}
+                    </option>
+                  ))
+                ) : (
+                  <option disabled>No products available</option>
+                )}
+              </select>
             </div>
+
             <div>
               <label>Image (Upload):</label>
               <input
@@ -416,11 +466,8 @@ const SalesActive = () => {
               </div>
             )}
             <div>
-              <button onClick={handleAddSale} style={styles.button}>
+              <button onClick={handleAddSale} style={styles.buttonaddmodal}>
                 Add Sale
-              </button>
-              <button onClick={handleCancel} style={styles.buttonCancel}>
-                Cancel
               </button>
             </div>
           </div>
@@ -477,28 +524,36 @@ const SalesActive = () => {
                 />
               </div>
             </div>
+
             <div style={styles.productList}>
               <h3 style={styles.productListTitle}>Products in Sale:</h3>
-              <ul style={styles.productListItems}>
-                {detailSale.products.map((product) => (
-                  <li key={product.product_id} style={styles.productItem}>
-                    <p style={styles.productText}>
-                      <strong>Product Name:</strong> {product.name_product}
-                    </p>
-                    <p style={styles.productText}>
-                      <strong>Category:</strong> {product.name_category}
-                    </p>
-                    <p style={styles.productText}>
-                      <strong>Brand:</strong> {product.name_brand}
-                    </p>
-                    <img
-                      src={product.thumb}
-                      alt={product.name_product}
-                      style={styles.productImage}
-                    />
-                  </li>
-                ))}
-              </ul>
+              {detailSale.products.length === 0 ? (
+                <p style={{ color: "red", fontWeight: "bold" }}>
+                  This product has been used with another sale. Please choose
+                  another product.
+                </p>
+              ) : (
+                <ul style={styles.productListItems}>
+                  {detailSale.products.map((product) => (
+                    <li key={product.product_id} style={styles.productItem}>
+                      <p style={styles.productText}>
+                        <strong>Product Name:</strong> {product.name_product}
+                      </p>
+                      <p style={styles.productText}>
+                        <strong>Category:</strong> {product.name_category}
+                      </p>
+                      <p style={styles.productText}>
+                        <strong>Brand:</strong> {product.name_brand}
+                      </p>
+                      <img
+                        src={product.thumb}
+                        alt={product.name_product}
+                        style={styles.productImage}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
         </div>
@@ -511,6 +566,9 @@ const SalesActive = () => {
             ...(showEditModal && styles.modalVisible),
           }}
         >
+           <button onClick={handleCancel} style={styles.closeButton}>
+            &times;
+          </button>
           <div style={styles.modalContent}>
             <h2>Edit Sale</h2>
             <div>
@@ -553,15 +611,33 @@ const SalesActive = () => {
                 style={styles.input}
               />
             </div>
+
             <div>
-              <label>Product IDs (JSON format):</label>
-              <textarea
+              <label>Select product:</label>
+              <select
                 name="product_ids"
+                style={{ padding: "8px", fontSize: "14px", marginLeft: "10px" }}
                 value={editsale.product_ids}
                 onChange={handleChange}
-                style={styles.input}
-              />
+              >
+                <option value="">Select Product</option>
+                {loading ? (
+                  <option disabled>Loading products...</option>
+                ) : products.products.length > 0 ? (
+                  products.products.map((product) => (
+                    <option
+                      key={product._id}
+                      value={JSON.stringify([product._id])}
+                    >
+                      {product.name_product}
+                    </option>
+                  ))
+                ) : (
+                  <option disabled>No products available</option>
+                )}
+              </select>
             </div>
+
             <div>
               <label>Image (Upload):</label>
               <input
@@ -582,13 +658,11 @@ const SalesActive = () => {
               </div>
             )}
             <div>
-              <button onClick={handleEditSale} style={styles.button}>
+              <button onClick={handleEditSale} style={styles.buttonaddmodal}>
                 Update Sale
               </button>
-              <button onClick={handleCancel} style={styles.buttonCancel}>
-                Cancel
-              </button>
-            </div>
+             
+            </div>  
           </div>
         </div>
       )}
@@ -621,7 +695,6 @@ const SalesActive = () => {
                     src={sale.thumb || "https://via.placeholder.com/150"}
                     alt={sale.name_sale}
                     style={styles.thumbnail}
-                   
                   />
                 </td>
                 <td style={styles.tableCell}>{sale.name_sale}</td>
@@ -670,19 +743,25 @@ const SalesActive = () => {
 };
 
 const styles = {
+  container: {
+    width: "100%",
+    margin: "0 auto",
+    paddingTop: "20px",
+  },
   modal: {
     position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    opacity: 0,
-    visibility: "hidden",
-    transition: "opacity 0.3s ease",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    backgroundColor: "white",
+    padding: "30px",
+    boxShadow: "0 6px 15px rgba(0, 0, 0, 0.1)",
+    zIndex: 10,
+    borderRadius: "10px",
+    width: "90%",
+    maxWidth: "800px",
+    overflowY: "auto",
+    maxHeight: "80vh",
   },
   modalVisible: {
     opacity: 1,
@@ -690,19 +769,27 @@ const styles = {
   },
   modalContent: {
     backgroundColor: "#fff",
-    padding: "20px",
-    borderRadius: "8px",
-    width: "400px",
-    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
+    padding: "5px",
   },
   input: {
     width: "100%",
-    padding: "8px",
-    margin: "10px 0",
-    border: "1px solid #ccc",
-    borderRadius: "4px",
+    padding: "12px",
+    marginBottom: "12px",
+    fontSize: "16px",
+    borderRadius: "8px",
+    border: "1px solid #ddd",
   },
   button: {
+    backgroundColor: "#4CAF50",
+    color: "white",
+    padding: "10px 15px",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+    marginRight: "10px",
+  },
+  buttonaddmodal: {
+    width: "100%",
     backgroundColor: "#4CAF50",
     color: "white",
     padding: "10px 15px",
@@ -726,7 +813,7 @@ const styles = {
     border: "none",
     borderRadius: "4px",
     cursor: "pointer",
-    marginLeft:"10px"
+    marginLeft: "10px",
   },
   table: {
     width: "100%",
@@ -780,20 +867,20 @@ const styles = {
   modalTitle: {
     fontSize: "24px",
     fontWeight: "600",
-    marginBottom: "20px",
+
     textAlign: "center",
     color: "#333",
   },
   closeButton: {
+    marginLeft: 700,
     background: "red",
     border: "none",
     fontSize: "30px",
     fontWeight: "bold",
-    color: "#999",
-    cursor: "pointer",
+    color: "white",
   },
   detailSection: {
-    marginBottom: "15px",
+    marginBottom: "0px",
   },
   detailLabel: {
     fontSize: "16px",
@@ -802,17 +889,16 @@ const styles = {
   },
   detailRow: {
     display: "flex",
-    justifyContent: "space-between", // Căn giữa tên và giá trị
+    justifyContent: "space-between",
     alignItems: "center",
   },
   detailValue: {
     fontSize: "16px",
     color: "#333",
-    marginTop: "5px",
   },
   saleImage: {
-    maxWidth: "400px",
-    maxHeight: "100px",
+    maxWidth: "50px",
+    maxHeight: "50px",
     objectFit: "cover",
     borderRadius: "4px",
     marginTop: "10px",
@@ -824,7 +910,6 @@ const styles = {
     fontSize: "20px",
     fontWeight: "600",
     color: "#333",
-    marginBottom: "15px",
   },
   productListItems: {
     listStyleType: "none",
@@ -844,8 +929,8 @@ const styles = {
     margin: "5px 0",
   },
   productImage: {
-    width: "100px",
-    height: "100px",
+    width: "50px",
+    height: "50px",
     objectFit: "cover",
     marginTop: "10px",
     borderRadius: "4px",

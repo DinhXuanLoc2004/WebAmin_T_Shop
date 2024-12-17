@@ -5,8 +5,9 @@ import {
   faShoppingCart,
   faMoneyBill,
   faClock,
+  faComment
 } from "@fortawesome/free-solid-svg-icons";
-import styled from "styled-components";
+import axios from "axios";
 import {
   AreaChart,
   Area,
@@ -15,470 +16,369 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  defs,
-  linearGradient,
 } from "recharts";
-
-import { color } from "chart.js/helpers";
-import axios from "axios";
-import ShowProductsContainer from "../component/ShowProductsContainer";
-const DashboardContainer = styled.div`
-  width: 100%;
-  padding: 20px;
-  background-color: #f4f4f4;
-`;
-
-const StatsContainer = styled.div`
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 20px;
-`;
-
-const StatCard = styled.div`
-  background-color: white;
-  border-radius: 50px;
-  padding: 20px;
-  flex: 1;
-  margin: 0 10px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-`;
-
-const StatNumber = styled.h2`
-  margin: 10px 0;
-`;
-
-const StatDescription = styled.p`
-  color: grey;
-  font-size: 14px;
-`;
-
-const ChartContainer = styled.div`
-  background-color: white;
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-`;
+import "../Css/Dashboard.css";
 
 export default function DashBoard() {
   const [users, setUsers] = useState({ user: 0 });
   const [order, setOrders] = useState({ order: 0 });
+  const [products, setProducts] = useState([]);
+  const [statistics, setStatistics] = useState({
+    monthly: [],
+    selectedMonthWeeks: [],
+    selectedWeekDays: [],
+  });
+
+  const [selectedMonth, setSelectedMonth] = useState(1);
+  const [selectedWeek, setSelectedWeek] = useState(1);
+  const [activeChart, setActiveChart] = useState("monthly");
+
+  const [customerStatistics, setCustomerStatistics] = useState([]);
+
+  const [chartDataKey, setChartDataKey] = useState("total_orders");
+
+  const dashBoardData = { user: 182, order: 400, sales: 31.109, pending: 48 };
 
   useEffect(() => {
     fetchDataUser();
+    fetchOrderStatistics();
     fetchDataOrders();
+    fetchProducts();
   }, []);
+
+  const fetchOrderStatistics = async () => {
+    try {
+      const response = await axios.get(
+        "http://localhost:5000/v1/api/dashboard/order_statistics"
+      );
+      const { monthly_statistics, user_email_statistics } =
+        response.data.metadata;
+
+      setStatistics((prev) => ({ ...prev, monthly: monthly_statistics }));
+      setCustomerStatistics(user_email_statistics || []); // Cập nhật danh sách khách hàng
+      handleMonthSelection(1, monthly_statistics); // Chọn tháng đầu tiên mặc định
+    } catch (error) {
+      console.error("Error fetching order statistics:", error);
+    }
+  };
+
   const fetchDataUser = async () => {
     try {
       const response = await axios.get(
         "http://localhost:5000/v1/api/auth/get_all_users"
       );
-
       const userCount = response.data.metadata?.length || 0;
-      setUsers({ user: userCount }); // Cập nhật số lượng user
+      setUsers({ user: userCount });
     } catch (error) {
       console.error("Error fetching users:", error);
     }
   };
+
   const fetchDataOrders = async () => {
     try {
       const response = await axios.get(
         "http://localhost:5000/v1/api/order/get_all_orders"
       );
-
       const orderCount = response.data.metadata?.length || 0;
-      setOrders({ order: orderCount }); // Cập nhật số lượng order
+      setOrders({ order: orderCount });
     } catch (error) {
       console.error("Error fetching orders:", error);
     }
   };
-  const data = [
-    { month: "January", sales: 80 },
-    { month: "February", sales: 20 },
-    { month: "March", sales: 90 },
-    { month: "April", sales: 10 },
-    { month: "May", sales: 60 },
-    { month: "June", sales: 50 },
-    { month: "July", sales: 70 },
-    { month: "August", sales: 60 },
-    { month: "September", sales: 100 },
-    { month: "October", sales: 80 },
-    { month: "November", sales: 90 },
-    { month: "December", sales: 45 },
-  ];
 
-  const dashBoardData = { user: 182, order: 400, sales: 31.109, pending: 48 };
-  // api san pham nhiei ng mua
-  const [products, setProducts] = useState([]);
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axios.post(
-          "http://localhost:5000/v1/api/product/get_all_products?get_top_trendings=5"
-        );
+  const fetchProducts = async () => {
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/v1/api/product/get_all_products?get_top_trendings=50"
+      );
+      const productsData = response.data?.metadata?.products || [];
+      setProducts(productsData);
+    } catch (error) {
+      console.error("Lỗi khi gọi API:", error);
+    }
+  };
 
-        const productsData = response.data?.metadata?.products || [];
-        if (Array.isArray(productsData)) {
-          setProducts(productsData);
-        } else {
-          console.warn("Dữ liệu sản phẩm không hợp lệ:", productsData);
-        }
-      } catch (error) {
-        console.error("Lỗi khi gọi API:", error);
-      }
-    };
-    fetchData();
-  }, []);
-  const customers = [
-    { id: 1, name: "Nguyễn Văn A", purchaseCount: 15 },
-    { id: 2, name: "Trần Thị B", purchaseCount: 12 },
-    { id: 3, name: "Lê Văn C", purchaseCount: 10 },
-    // Thêm các khách hàng khác
-  ];
+  const handleMonthSelection = (month, data) => {
+    const monthData = data.find((m) => m.month === month);
+    setSelectedMonth(month);
+    setStatistics((prev) => ({
+      ...prev,
+      selectedMonthWeeks: monthData?.weeks || [],
+    }));
+    handleWeekSelection(1, monthData?.weeks || []); // Load first week initially
+  };
+
+  const handleWeekSelection = (week, data) => {
+    const weekData = data.find((w) => w.week === week);
+    setSelectedWeek(week);
+    setStatistics((prev) => ({
+      ...prev,
+      selectedWeekDays: weekData?.days || [],
+    }));
+  };
+
+  const handleChartClick = () => {
+    setChartDataKey((prevKey) =>
+      prevKey === "total_orders" ? "total_revenue" : "total_orders"
+    );
+  };
+
+  const formatCurrency = (value) =>
+    new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(value);
 
   return (
-    <DashboardContainer>
-      <StatsContainer>
-        <StatCard>
-          <div
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              display: "flex",
-            }}
-          >
-            <div>
-              <StatDescription style={styles.title}>Total User</StatDescription>
-              <StatNumber>{users.user}</StatNumber>
-            </div>
-            <div style={{ ...styles.iconView, backgroundColor: "#FFCCFF	" }}>
-              <FontAwesomeIcon
-                style={{ ...styles.icon, color: "#CC99FF" }}
-                icon={faUser}
-              />
-            </div>
-          </div>
-        </StatCard>
-        <StatCard>
-          <div
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              display: "flex",
-            }}
-          >
-            <div>
-              <StatDescription style={styles.title}>
-                Total Orders
-              </StatDescription>
-              <StatNumber>{order.order}</StatNumber>
-            </div>
-            <div style={{ ...styles.iconView, backgroundColor: "#FFFF66	" }}>
-              <FontAwesomeIcon
-                style={{ ...styles.icon, color: "#FEC53D" }}
-                icon={faShoppingCart}
-              />
-            </div>
-          </div>
-        </StatCard>
-        <StatCard>
-          <div
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              display: "flex",
-            }}
-          >
-            <div>
-              <StatDescription style={styles.title}>
-                Total Sales
-              </StatDescription>
-              <StatNumber>{dashBoardData.sales}</StatNumber>
-            </div>
-            <div style={{ ...styles.iconView, backgroundColor: "#CCFFCC" }}>
-              <FontAwesomeIcon
-                style={{ ...styles.icon, color: "#4AD991" }}
-                icon={faMoneyBill}
-              />
-            </div>
-          </div>
-        </StatCard>
-        <StatCard>
-          <div
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              display: "flex",
-            }}
-          >
-            <div>
-              <StatDescription style={styles.title}>
-                Total Pending
-              </StatDescription>
-              <StatNumber>{dashBoardData.pending}</StatNumber>
-            </div>
-            <div style={{ ...styles.iconView, backgroundColor: "#66FFCC	" }}>
-              <FontAwesomeIcon
-                style={{ ...styles.icon, color: "#FF9066" }}
-                icon={faClock}
-              />
-            </div>
-          </div>
-        </StatCard>
-      </StatsContainer>
-      <div style={styles.screen}>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            alignItems: "center",
-          }}
-        >
-          <h2 style={styles.title_saleoff}>Các sản phẩm bán chạy</h2>
-          <img
-            style={styles.saleOff_icon}
-            src="https://batdongsan24h.s3-ap-southeast-1.amazonaws.com/Buysell/2022/12/17/133157198984883145-20200910100355-44a4-wm.png"
-            alt="Sale Off Icon"
-          />
-        </div>
-        <div style={styles.container}>
-          <div style={styles.productList}>
-            {products.map((product) => (
-              <div
-                key={product._id}
-                style={styles.productCard}
-                onMouseOver={(e) =>
-                  (e.currentTarget.style.transform = "scale(1.05)")
-                }
-                onMouseOut={(e) =>
-                  (e.currentTarget.style.transform = "scale(1)")
-                }
-              >
-                <img
-                  src={product.thumb}
-                  alt={product.name}
-                  style={styles.image}
-                />
-                <h3 style={styles.name}>{product.name_product}</h3>
-                <p style={styles.rating}>⭐ {product.averageRating}</p>
+    <div className="container my-4">
+      <div className="row mb-4">
+        <StatCard
+          title="Total Users"
+          value={users.user}
+          icon={faUser}
+          color="primary"
+        />
+        <StatCard
+          title="Total Orders"
+          value={order.order}
+          icon={faShoppingCart}
+          color="warning"
+        />
+        <StatCard
+          title="Total Sales"
+          value={dashBoardData.sales}
+          icon={faMoneyBill}
+          color="success"
+        />
+        <StatCard
+          title="Pending Orders"
+          value={dashBoardData.pending}
+          icon={faClock}
+          color="danger"
+        />
+      </div>
 
-                {/* <p style={styles.category}>{product.name_category}</p> */}
-                <div
-                  style={{
-                    flexDirection: "row",
-                    display: "flex",
-                    justifySelf: "center",
-                    gap: 50,
-                  }}
-                >
-                  <p style={styles.brand}>{product.name_brand}</p>
-                  <p style={styles.price}>{product.price_max}$</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <h2 style={styles.title_customers}>
-          Danh sách các khách hàng mua nhiều
-        </h2>
-        <div style={styles.customerList}>
-          {customers.map((customer) => (
-            <div key={customer.id} style={styles.customerItem}>
-              <p style={styles.customerName}>{customer.name}</p>
-              <p style={styles.customerPurchases}>
-                Số lượng mua: {customer.purchaseCount}
+      {/* Product List */}
+      <h2 className="mb-4 text-center">Top Trending Products</h2>
+      <div className="scroll-container">
+        {products.map((product) => (
+          <div
+            key={product._id}
+            className="card shadow-sm"
+            style={{ minWidth: "250px", maxWidth: "250px", flex: "0 0 auto" }}
+          >
+            <img
+              src={product.thumb}
+              alt={product.name_product}
+              className="card-img-top"
+              style={{ height: "150px", objectFit: "cover" }}
+            />
+            <div className="card-body text-center">
+              <h5 className="card-title">{product.name_product}</h5>
+              <p className="text-muted">⭐ {product.averageRating}</p>
+              <p>
+                <strong className="text-info">{product.name_brand}</strong> -{" "}
+                <span className="text-danger">
+                  {new Intl.NumberFormat("vi-VN", {
+                    style: "currency",
+                    currency: "VND",
+                  }).format(product.price_max)}
+                </span>
+              </p>
+              <p className="text-muted">
+                Sold: {product.total_orders} products
               </p>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
-      <ChartContainer>
-        <h3>Sales Details</h3>
-        <ResponsiveContainer width="100%" height={700}>
-          <AreaChart data={data}>
-            <defs>
-              <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#FF0000" stopOpacity={0.8} />
-                <stop offset="95%" stopColor="#FF0000" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <XAxis dataKey="month" />
+
+      {/* Customer List */}
+      <h2 className="mt-5 mb-3 text-center">Top Customers</h2>
+      <ul className="list-group">
+        {customerStatistics.map((customer) => (
+          <li
+            key={customer.phone}
+            className="list-group-item d-flex justify-content-between align-items-center"
+          >
+            <div>
+              <strong>{customer.name}</strong> {customer.email}
+              <br />
+              <small className="text-muted">{customer.province_name}</small>
+            </div>
+            <div>
+              <span className="badge bg-primary rounded-pill mb-1">
+                Orders: {customer.total_orders}
+              </span>
+              <br />
+              <span className="badge bg-success rounded-pill">
+                Spent:{" "}
+                {new Intl.NumberFormat("vi-VN", {
+                  style: "currency",
+                  currency: "VND",
+                }).format(customer.total_spent)}
+              </span>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      {/* Monthly Chart */}
+      <div className="mt-5">
+        <h3 className="mb-4 text-center">Monthly Statistics</h3>
+        <div className="mb-3">
+          <label style={{marginRight: "10px"}}>Select Month:</label>
+          <select
+            value={selectedMonth}
+            onChange={(e) =>
+              handleMonthSelection(Number(e.target.value), statistics.monthly)
+            }
+            style={{borderRadius: "5px"}}
+          >
+            {statistics.monthly.map((m) => (
+              <option key={m.month} value={m.month}>
+                Month {m.month} - {m.year}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <ResponsiveContainer
+          width="100%"
+          height={400}
+          style={{
+            border: "1px solid #e5e5e5",
+            borderRadius: "8px",
+            boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
+          }}
+        >
+          <AreaChart
+            data={statistics.selectedMonthWeeks}
+            onClick={handleChartClick}
+            margin={{ top: 30, right: 30, left: 30, bottom: 10 }}
+          >
+            <XAxis tickFormatter={(value) => `Tuần ${value}`} dataKey="week" />
             <YAxis />
             <CartesianGrid strokeDasharray="3 3" />
-            <Tooltip />
+            <Tooltip
+              formatter={(value, name) =>
+                name === "total_revenue" ? formatCurrency(value) : value
+              }
+            />
             <Area
-              type="linear"
-              dataKey="sales"
-              stroke="#FF0000"
-              fillOpacity={1}
-              fill="url(#colorSales)"
+              type="monotone"
+              dataKey={chartDataKey} // Thay đổi giữa total_orders và total_revenue
+              stroke="#8884d8"
+              fill="#8884d8"
             />
           </AreaChart>
         </ResponsiveContainer>
-      </ChartContainer>
-    </DashboardContainer>
+      </div>
+
+      {/* Weekly Chart */}
+      <div className="mt-5">
+        <h3 className="mb-4 text-center">Weekly Statistics</h3>
+        <div className="mb-3">
+          <label>Select Week: </label>
+          <select
+            value={selectedWeek}
+            onChange={(e) =>
+              handleWeekSelection(
+                Number(e.target.value),
+                statistics.selectedMonthWeeks
+              )
+            }
+          >
+            {statistics.selectedMonthWeeks.map((w) => (
+              <option key={w.week} value={w.week}>
+                Week {w.week}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <ResponsiveContainer
+          width="100%"
+          height={400}
+          style={{
+            border: "1px solid #e5e5e5",
+            borderRadius: "8px",
+            boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
+          }}
+        >
+          <AreaChart
+            data={statistics.selectedWeekDays}
+            onClick={handleChartClick}
+            margin={{ top: 30, right: 30, left: 30, bottom: 10 }}
+          >
+            <XAxis dataKey="date" />
+            <YAxis />
+            <CartesianGrid strokeDasharray="3 3" />
+            <Tooltip
+              formatter={(value, name) =>
+                name === "total_revenue" ? formatCurrency(value) : value
+              }
+            />
+            <Area
+              type="monotone"
+              dataKey={chartDataKey} // Thay đổi giữa total_orders và total_revenue
+              stroke="#82ca9d"
+              fill="#82ca9d"
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Full Year Chart */}
+      <div className="mt-5">
+        <h3 className="mb-4 text-center">Yearly Statistics</h3>
+        <ResponsiveContainer
+          width="100%"
+          height={400}
+          style={{
+            border: "1px solid #e5e5e5",
+            borderRadius: "8px",
+            boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.1)",
+          }}
+        >
+          <AreaChart
+            data={statistics.monthly}
+            onClick={handleChartClick}
+            margin={{ top: 30, right: 30, left: 30, bottom: 10 }}
+          >
+            <XAxis dataKey="month" />
+            <YAxis />
+            <CartesianGrid strokeDasharray="3 3" />
+            <Tooltip
+              formatter={(value, name) =>
+                name === "total_revenue" ? formatCurrency(value) : value
+              }
+            />
+            <Area
+              type="monotone"
+              dataKey={chartDataKey} // Thay đổi giữa total_orders và total_revenue
+              stroke="#ffc658"
+              fill="#ffc658"
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
   );
 }
 
-const styles = {
-  icon: {
-    height: 40,
-    width: 40,
-    color: "white",
-  },
-  iconView: {
-    height: 55,
-    width: 55,
-    borderRadius: "30%",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 10,
-    marginLeft: 40,
-    marginBottom: 10,
-  },
-  title: {
-    fontSize: 25,
-    color: "#202224",
-    fontWeight: 500,
-  },
-  screen: {
-    marginTop: 20,
-    padding: 20,
-    border: "1px solid #ddd",
-    backgroundColor: "#f9f9f9",
-    width: 1800,
-  },
-  containerShowProducts: {
-    display: "flex",
-    flexWrap: "wrap",
-    justifyContent: "space-around",
-    gap: 20,
-    width: "100%",
-  },
-  title_saleoff: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
-    marginLeft: 30,
-    color: "#333",
-  },
-  saleOff_icon: {
-    height: 100,
-    width: 120,
-    marginLeft: 10,
-    marginBottom: 10,
-    marginLeft: 30,
-    color: "#FF9933",
-  },
-  title_customers: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#333",
-    marginTop: 20,
-  },
-  customerList: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 10,
-    marginTop: 10,
-  },
-  customerItem: {
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    padding: 10,
-    backgroundColor: "#f4f4f4",
-    borderRadius: 8,
-  },
-  customerName: {
-    fontWeight: "bold",
-  },
-  customerPurchases: {
-    color: "grey",
-  },
-  thTd: {
-    textAlign: "center",
-    padding: "10px 15px",
-    fontWeight: "normal",
-    borderBottom: "1px solid #ddd",
-    fontSize: "14px",
-    color: "#555",
-  },
-  thTdTable: {
-    textAlign: "center",
-    fontWeight: "bold",
-    borderBottom: "1px solid #ddd",
-    overflow: "hidden",
-    whiteSpace: "nowrap",
-    textOverflow: "ellipsis",
-    maxWidth: "180px",
-    padding: "10px 50px",
-    fontSize: "14px",
-    color: "#333",
-  },
-
-  container: {
-    fontFamily: "'Arial', sans-serif",
-    maxWidth: "100%",
-    marginLeft: 25,
-    overflowX: "auto", // Cho phép cuộn ngang
-    whiteSpace: "nowrap", // Không cho xuống dòng
-  },
-  productCard: {
-    display: "inline-block", // Cần để các sản phẩm nằm ngang
-    border: "1px solid #ddd",
-    borderRadius: "10px",
-    width: "250px",
-    padding: "15px",
-    textAlign: "center",
-    marginRight: "30px",
-    boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-    transition: "transform 0.3s",
-  },
-  productCardHover: {
-    transform: "scale(1.05)",
-  },
-  image: {
-    width: 200,
-    height: 300,
-    objectFit: "cover",
-    borderRadius: "8px",
-    marginBottom: "15px",
-  },
-  name: {
-    fontSize: "25px",
-    fontWeight: "600",
-    margin: "10px 0",
-    color: "#444",
-    whiteSpace: "nowrap", // Ngăn không cho văn bản xuống dòng
-    overflow: "hidden", // Ẩn văn bản vượt quá chiều rộng của phần tử
-    textOverflow: "ellipsis", // Thêm dấu "..." khi văn bản bị cắt
-  },
-
-  category: {
-    fontSize: "14px",
-    color: "#777",
-    marginBottom: "10px",
-  },
-  brand: {
-    fontSize: "20px",
-    color: "black",
-    fontWeight: "bold",
-    marginBottom: "10px",
-  },
-  price: {
-    fontSize: "20px",
-    fontWeight: "bold",
-    color: "#E91E63",
-    marginBottom: "10px",
-  },
-  rating: {
-    fontSize: "14px",
-    color: "#FFD700",
-  },
-};
+function StatCard({ title, value, icon, color }) {
+  return (
+    <div className="col-md-3 mb-4">
+      <div className={`card text-white bg-${color} shadow`}>
+        <div className="card-body d-flex justify-content-between align-items-center">
+          <div>
+            <h5 className="card-title">{title}</h5>
+            <h2 className="card-text">{value}</h2>
+          </div>
+          <FontAwesomeIcon icon={icon} size="3x" />
+        </div>
+      </div>
+    </div>
+  );
+}

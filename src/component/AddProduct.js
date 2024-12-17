@@ -7,6 +7,16 @@ import axios from "axios";
 import { Modal, Button, Row, Col } from "react-bootstrap";
 
 const AddProduct = ({ onProductAdded }) => {
+  const [errors, setErrors] = useState({
+    name_product: "",
+    description: "",
+    category_id: "",
+    brand_id: "",
+    is_public: "",
+    product_variants: "",
+    images: "",
+  });
+
   const [isLoading, setIsLoading] = useState(false);
   const [isLoading1, setIsLoading1] = useState(false);
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
@@ -17,7 +27,7 @@ const AddProduct = ({ onProductAdded }) => {
     category_id: "",
     brand_id: "",
     product_variants: [],
-    is_public: "false",
+    is_public: "true",
   });
   const [imagesPreview, setImagesPreview] = useState([]);
   const [brands, setBrands] = useState([]);
@@ -65,6 +75,7 @@ const AddProduct = ({ onProductAdded }) => {
     setChildCategories([]);
     setSelectedSubCategory(null);
     fetchCategories(category._id, setSubCategories);
+    setErrors((prev) => ({ ...prev, category_id: "" }));
   };
 
   const handleSubCategorySelect = (subCategory) => {
@@ -135,6 +146,91 @@ const AddProduct = ({ onProductAdded }) => {
 
   const handleAddProduct = async () => {
     setIsLoading1(true);
+    let valid = true;
+    const newErrors = {
+      name_product: "",
+      description: "",
+      category_id: "",
+      brand_id: "",
+      is_public: "",
+      product_variants: "",
+      images: "",
+    };
+
+    // Kiểm tra dữ liệu nhập vào và gán lỗi nếu không hợp lệ
+    if (!newProductData.name_product.trim()) {
+      valid = false;
+      newErrors.name_product = "Please enter the product name.";
+    }
+
+    if (!newProductData.description.trim()) {
+      valid = false;
+      newErrors.description = "Please enter the description.";
+    }
+
+    if (!newProductData.category_id) {
+      valid = false;
+      newErrors.category_id = "Please select a category.";
+    }
+
+    if (!newProductData.brand_id) {
+      valid = false;
+      newErrors.brand_id = "Please select a brand.";
+    }
+
+    if (!newProductData.product_variants.length) {
+      valid = false;
+      newErrors.product_variants = "Please add at least one product variant.";
+    } else {
+      const seenVariants = new Set(); // Sử dụng Set để lưu các cặp giá trị duy nhất
+
+      newProductData.product_variants.forEach((variant, index) => {
+        if (!variant.quantity) {
+          valid = false;
+          newErrors[`product_variants[${index}].quantity`] =
+            "Please enter the quantity.";
+        }
+        if (!variant.price) {
+          valid = false;
+          newErrors[`product_variants[${index}].price`] = "Please enter the price.";
+        }
+        if (!variant.size_id) {
+          valid = false;
+          newErrors[`product_variants[${index}].size_id`] =
+            "Please select a size.";
+        }
+        if (!variant.image_product_color_id) {
+          valid = false;
+          newErrors[`product_variants[${index}].image_product_color_id`] =
+            "Please enter the product color ID.";
+        }
+
+        const seenVariants = new Set();
+        newProductData.product_variants.forEach((variant, index) => {
+          const key = `${variant.size_id}-${variant.image_product_color_id}`;
+          if (seenVariants.has(key)) {
+            valid = false;
+            newErrors[`product_variants[${index}].duplicate`] =
+              "Duplicate size and color combination detected.";
+          } else {
+            seenVariants.add(key);
+          }
+        });
+      });
+    }
+
+    // Nếu có lỗi, cập nhật lỗi và dừng xử lý
+    if (!valid) {
+      console.log("Errors:", newErrors);
+      setErrors(newErrors); // Cập nhật lỗi cho từng trường
+      setIsLoading1(false);
+      return;
+    }
+
+    // Xóa lỗi nếu tất cả dữ liệu hợp lệ
+    setErrors({}); // Reset lỗi
+
+    // Tiếp tục thực hiện logic gửi dữ liệu
     try {
       const formData = new FormData();
       formData.append("name_product", newProductData.name_product);
@@ -203,9 +299,10 @@ const AddProduct = ({ onProductAdded }) => {
       ...newProductData,
       images: updatedFiles,
     });
-  }; 
+  };
 
   const handleAddVariant = () => {
+    setErrors((prev) => ({ ...prev, product_variants: "" }));
     setNewProductData({
       ...newProductData,
       product_variants: [
@@ -245,6 +342,12 @@ const AddProduct = ({ onProductAdded }) => {
     setNewProductData({
       ...newProductData,
       product_variants: newVariants,
+    });
+
+    setErrors((prev) => {
+      const updatedErrors = { ...prev };
+      delete updatedErrors[`product_variants[${index}].${field}`];
+      return updatedErrors;
     });
   };
 
@@ -302,27 +405,41 @@ const AddProduct = ({ onProductAdded }) => {
               <input
                 type="text"
                 value={newProductData.name_product}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const value = e.target.value;
                   setNewProductData({
                     ...newProductData,
-                    name_product: e.target.value,
-                  })
-                }
+                    name_product: value,
+                  });
+                  if (value.trim()) {
+                    setErrors((prev) => ({ ...prev, name_product: "" }));
+                  }
+                }}
                 style={styles.input}
               />
+              {errors.name_product && (
+                <p style={styles.errorText}>{errors.name_product}</p>
+              )}
             </div>
             <div style={styles.formGroup}>
               <label style={styles.label}>Description:</label>
               <textarea
                 value={newProductData.description}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const value = e.target.value;
                   setNewProductData({
                     ...newProductData,
-                    description: e.target.value,
-                  })
-                }
+                    description: value,
+                  });
+                  if (value.trim()) {
+                    setErrors((prev) => ({ ...prev, description: "" }));
+                  }
+                }}
                 style={styles.textarea}
-              ></textarea>
+              />
+              {errors.description && (
+                <p style={styles.errorText}>{errors.description}</p>
+              )}
             </div>
             <div style={styles.formGroup}>
               <label style={styles.label}>Category:</label>
@@ -334,6 +451,9 @@ const AddProduct = ({ onProductAdded }) => {
                   readOnly
                   style={styles.input}
                 />
+                {errors.category_id && (
+                  <p style={styles.errorText}>{errors.category_id}</p>
+                )}
               </div>
 
               <Modal
@@ -450,12 +570,16 @@ const AddProduct = ({ onProductAdded }) => {
               <label style={styles.label}>Brand:</label>
               <select
                 value={newProductData.brand_id}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const value = e.target.value;
                   setNewProductData({
                     ...newProductData,
                     brand_id: e.target.value,
-                  })
-                }
+                  });
+                  if (value) {
+                    setErrors((prev) => ({ ...prev, brand_id: "" }));
+                  }
+                }}
                 style={styles.select}
               >
                 <option value="" disabled>
@@ -467,6 +591,9 @@ const AddProduct = ({ onProductAdded }) => {
                   </option>
                 ))}
               </select>
+              {errors.brand_id && (
+                <p style={styles.errorText}>{errors.brand_id}</p>
+              )}
             </div>
             <div style={styles.formGroup}>
               <label style={styles.label}>Images:</label>
@@ -479,7 +606,7 @@ const AddProduct = ({ onProductAdded }) => {
                       style={styles.imagePreview}
                     />
                     <button
-                    type="button"
+                      type="button"
                       style={styles.removeButton}
                       onClick={() => handleRemoveImage(index)}
                     >
@@ -505,7 +632,7 @@ const AddProduct = ({ onProductAdded }) => {
                   onChange={(e) =>
                     setNewProductData({
                       ...newProductData,
-                      is_public: e.target.value === "true",
+                      is_public: e.target.value === "false",
                     })
                   }
                   style={styles.select}
@@ -537,7 +664,16 @@ const AddProduct = ({ onProductAdded }) => {
                         </option>
                       ))}
                     </select>
-
+                    {errors[`product_variants[${index}].size_id`] && (
+                      <p style={styles.errorText}>
+                        {errors[`product_variants[${index}].size_id`]}
+                      </p>
+                    )}
+                    {errors[`product_variants[${index}].duplicate`] && (
+                      <p style={styles.errorText}>
+                        {errors[`product_variants[${index}].duplicate`]}
+                      </p>
+                    )}
                     <div
                       style={{
                         background: "#EEEEEE",
@@ -558,6 +694,11 @@ const AddProduct = ({ onProductAdded }) => {
                         }
                         style={styles.input}
                       />
+                      {errors[`product_variants[${index}].image_product_color_id`] && (
+                        <p style={styles.errorText}>
+                          {errors[`product_variants[${index}].image_product_color_id`]}
+                        </p>
+                      )}
 
                       <button
                         type="button"
@@ -648,6 +789,12 @@ const AddProduct = ({ onProductAdded }) => {
                       style={styles.input}
                       min="1"
                     />
+                    {errors[`product_variants[${index}].quantity`] && (
+                      <p style={styles.errorText}>
+                        {errors[`product_variants[${index}].quantity`]}
+                      </p>
+                    )}
+
                     <input
                       type="text"
                       placeholder="Enter price"
@@ -669,6 +816,11 @@ const AddProduct = ({ onProductAdded }) => {
                       }}
                       style={styles.input}
                     />
+                    {errors[`product_variants[${index}].price`] && (
+                      <p style={styles.errorText}>
+                        {errors[`product_variants[${index}].price`]}
+                      </p>
+                    )}
 
                     <div>
                       <button
@@ -690,6 +842,9 @@ const AddProduct = ({ onProductAdded }) => {
                 >
                   Add Variant
                 </button>
+                {errors.product_variants && (
+                  <p style={styles.errorText}>{errors.product_variants}</p>
+                )}
               </div>
             </div>
           </form>
@@ -860,7 +1015,6 @@ const styles = {
     fontSize: "14px",
     borderRadius: "5px",
     border: "1px solid #ccc",
-    marginBottom: "10px",
     height: "100px",
   },
   menu: {
@@ -885,5 +1039,10 @@ const styles = {
     justifyContent: "space-between",
     display: "flex",
     alignItems: "center",
+  },
+  errorText: {
+    color: "red",
+    fontSize: "12px",
+    textAlign: "center",
   },
 };

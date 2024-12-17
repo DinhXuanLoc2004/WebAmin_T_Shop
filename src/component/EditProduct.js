@@ -20,7 +20,10 @@ export default function EditProduct({ productId, onProductUpdated }) {
     brand_id: "",
     images: [],
     product_variants: [],
-    is_public: "false",
+    is_public: "true",
+  });
+  const [errors, setErrors] = useState({
+    product_variants: "",
   });
 
   const [categories, setCategories] = useState([]);
@@ -171,7 +174,7 @@ export default function EditProduct({ productId, onProductUpdated }) {
         description: product.description || "",
         category_id: product.category_id || "",
         brand_id: product.brand_id || "",
-        is_public: product.is_public || false,
+        is_public: product.is_public || true,
         images: oldImages, // Gán ảnh cũ vào `formData`
         product_variants: product.product_variants || [],
       });
@@ -186,6 +189,60 @@ export default function EditProduct({ productId, onProductUpdated }) {
   const handleUpdateProduct = async (e) => {
     setIsLoading1(true);
     e.preventDefault();
+    let valid = true;
+    const newErrors = {
+      product_variants: "",
+    };
+
+    if (!formData.product_variants.length) {
+      valid = false;
+    } else {
+      const seenVariants = new Set(); // Sử dụng Set để lưu các cặp giá trị duy nhất
+      formData.product_variants.forEach((variant, index) => {
+        if (!variant.quantity) {
+          valid = false;
+          newErrors[`product_variants[${index}].quantity`] =
+            "Please enter the quantity.";
+        }
+        if (!variant.price) {
+          valid = false;
+          newErrors[`product_variants[${index}].price`] =
+            "Please enter the price.";
+        }
+        if (!variant.size_id) {
+          valid = false;
+          newErrors[`product_variants[${index}].size_id`] =
+            "Please select a size.";
+        }
+        if (!variant.image_product_color_id) {
+          valid = false;
+          newErrors[`product_variants[${index}].image_product_color_id`] =
+            "Please enter the product color ID.";
+        }
+
+        const seenVariants = new Set();
+        formData.product_variants.forEach((variant, index) => {
+          const key = `${variant.size_id}-${variant.image_product_color_id}`;
+          if (seenVariants.has(key)) {
+            valid = false;
+            newErrors[`product_variants[${index}].duplicate`] =
+              "Duplicate size and color combination detected.";
+          } else {
+            seenVariants.add(key);
+          }
+        });
+      });
+    }
+
+    if (!valid) {
+      console.log("Errors:", newErrors);
+      setErrors(newErrors); // Cập nhật lỗi cho từng trường
+      setIsLoading1(false);
+      return;
+    }
+
+    // Xóa lỗi nếu tất cả dữ liệu hợp lệ
+    setErrors({}); // Reset lỗi
 
     const fd = new FormData();
     fd.append("name_product", formData.name_product);
@@ -248,7 +305,7 @@ export default function EditProduct({ productId, onProductUpdated }) {
       category_id: "",
       brand_id: "",
       product_variants: [],
-      is_public: "false",
+      is_public: "true",
     });
   };
 
@@ -281,8 +338,12 @@ export default function EditProduct({ productId, onProductUpdated }) {
       ...formData,
       product_variants: updatedVariants,
     });
+    setErrors((prev) => {
+      const updatedErrors = { ...prev };
+      delete updatedErrors[`product_variants[${index}].${field}`];
+      return updatedErrors;
+    });
   };
-  
 
   const handleAddVariant = () => {
     setFormData({
@@ -589,37 +650,48 @@ export default function EditProduct({ productId, onProductUpdated }) {
                               />
                             )}
                           </div>
-
                           <Form.Label style={{ margin: "5px" }}>
                             {variant.name_color}
                           </Form.Label>
                         </Form.Group>
+                        
                         <select
                           value={variant.image_product_color_id || ""} // Giá trị hiện tại
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            const selectedId = e.target.value;
+                            const selectedVariant =
+                              formData.product_variants.find(
+                                (variant) =>
+                                  variant.image_product_color_id === selectedId
+                              );
                             handleNewVariantChange(
                               index,
                               "image_product_color_id",
-                              e.target.value
-                            )
-                          }
+                              selectedId
+                            );
+                            if (selectedVariant) {
+                              handleNewVariantChange(
+                                index,
+                                "name_color",
+                                selectedVariant.name_color
+                              );
+                            }
+                          }}
                           style={styles.select}
                         >
                           <option value="" disabled>
                             Select Image Color ID
                           </option>
-                          {/* Lọc các variant và kiểm tra name_color */}
                           {[
                             ...new Set(
                               formData.product_variants
                                 .filter(
                                   (variant) => variant.image_product_color_id
-                                ) // Chỉ lấy các variant có image_product_color_id
-                                .map(
-                                  (variant) =>
-                                    variant.name_color
-                                      ? `${variant.image_product_color_id} - ${variant.name_color}`
-                                      : `${variant.image_product_color_id}` // Kiểm tra name_color
+                                )
+                                .map((variant) =>
+                                  variant.name_color
+                                    ? `${variant.image_product_color_id} - ${variant.name_color}`
+                                    : `${variant.image_product_color_id}`
                                 )
                             ),
                           ].map((idWithName) => (
@@ -715,11 +787,7 @@ export default function EditProduct({ productId, onProductUpdated }) {
                       <select
                         value={variant.size_id}
                         onChange={(e) =>
-                          handleNewVariantChange(
-                            index,
-                            "size_id",
-                            e.target.value
-                          )
+                          handleVariantChange(index, "size_id", e.target.value)
                         }
                         style={styles.select}
                       >
@@ -732,6 +800,16 @@ export default function EditProduct({ productId, onProductUpdated }) {
                           </option>
                         ))}
                       </select>
+                      {errors[`product_variants[${index}].size_id`] && (
+                        <p style={styles.errorText}>
+                          {errors[`product_variants[${index}].size_id`]}
+                        </p>
+                      )}
+                      {errors[`product_variants[${index}].duplicate`] && (
+                        <p style={styles.errorText}>
+                          {errors[`product_variants[${index}].duplicate`]}
+                        </p>
+                      )}
 
                       <label>Quantity:</label>
                       <input
@@ -739,15 +817,16 @@ export default function EditProduct({ productId, onProductUpdated }) {
                         placeholder="Enter quantity"
                         value={variant.quantity}
                         onChange={(e) =>
-                          handleNewVariantChange(
-                            index,
-                            "quantity",
-                            e.target.value
-                          )
+                          handleVariantChange(index, "quantity", e.target.value)
                         }
                         style={styles.input}
                         min="1"
                       />
+                      {errors[`product_variants[${index}].quantity`] && (
+                        <p style={styles.errorText}>
+                          {errors[`product_variants[${index}].quantity`]}
+                        </p>
+                      )}
 
                       <label>Price:</label>
                       <input
@@ -771,6 +850,11 @@ export default function EditProduct({ productId, onProductUpdated }) {
                         }}
                         style={styles.input}
                       />
+                      {errors[`product_variants[${index}].price`] && (
+                        <p style={styles.errorText}>
+                          {errors[`product_variants[${index}].price`]}
+                        </p>
+                      )}
 
                       <Form.Check
                         style={{ marginTop: "10px" }}
@@ -928,5 +1012,10 @@ const styles = {
     borderRadius: "5px",
     border: "1px solid #ccc",
     marginTop: "10px",
+  },
+  errorText: {
+    color: "red",
+    fontSize: "12px",
+    textAlign: "center",
   },
 };

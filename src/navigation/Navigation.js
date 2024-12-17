@@ -20,6 +20,7 @@ import ManageBrand from "../Screen/ManageBrand";
 import RecycleBin from "../Screen/RecycleBin";
 import SaleProducts from "../Screen/SaleProducts";
 import Vouchers from "../Screen/Vouchers";
+import Tshop from "../assets/images/Tshop.webp"
 
 export default function Navigation() {
   const [selected, setSelected] = useState("");
@@ -29,6 +30,9 @@ export default function Navigation() {
   return (
     <div style={styles.container}>
       <nav style={styles.nav}>
+      <div style={styles.logoContainer}>
+    <img src={Tshop} alt="Tshop" style={styles.logo} />
+  </div>
         <ul style={styles.list}>
           <li
             style={{
@@ -150,6 +154,7 @@ export default function Navigation() {
               Brand
             </Link>
           </li>
+
           <li
             style={{
               ...styles.listItem,
@@ -174,6 +179,7 @@ export default function Navigation() {
               User
             </Link>
           </li>
+          
           <li
             style={{
               ...styles.listItem,
@@ -273,13 +279,17 @@ const styles = {
     flexDirection: "row",
     width: "100vw",
     height: "100vh",
-  },
-  heading: {
-    color: "red",
-    fontSize: 24,
+    position: "relative", // Make the container relative for positioning the sidebar
   },
   nav: {
-    marginRight: 60,
+    position: "fixed", // Make the navigation fixed
+    top: 0,
+    left: 0,
+    width: "250px", // Set the width for the sidebar
+    height: "100vh", // Make the sidebar take the full height
+    padding: "20px", // Padding for the sidebar contents
+    marginRight: 20,
+    backgroundColor: "#f4f4f4", // Sidebar background color
   },
   list: {
     listStyleType: "none",
@@ -308,6 +318,23 @@ const styles = {
     marginRight: 10,
   },
   content: {
-    flex: 1,
+    marginLeft: "230px", // Add a left margin to avoid overlap with the fixed sidebar
+    padding: "20px", // Add padding for content
+    height: "100vh",
+    width: "100%",
+    overflowY: "auto", // Allow scrolling in content area
   },
+  logoContainer: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: "20px", // Thêm khoảng cách dưới logo
+  },
+  logo: {
+    width: "100px", // Kích thước logo
+    height: "auto",
+    borderRadius: "10px"
+  },
+  
 };
+
