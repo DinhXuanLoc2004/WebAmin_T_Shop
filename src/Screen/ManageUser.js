@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUser, faBan, faSearch } from "@fortawesome/free-solid-svg-icons";
+import { faBan, faUndo } from "@fortawesome/free-solid-svg-icons"; // Adding the faUndo icon for Unblock
 
 export default function ManageUser() {
   const [searchItem, setSearchItem] = useState("");
@@ -18,7 +18,29 @@ export default function ManageUser() {
       }
     };
     fetchUsers();
-  }, []);
+  }, []); // Initially fetch users when component mounts
+
+  const handleBlock = async (email) => {
+    try {
+      // Send request to update the user's status
+      const response = await axios.put(`http://localhost:5000/v1/api/auth/update_status_user?email=${email}`);
+      
+      // Re-fetch users after the status update
+      const fetchUsers = async () => {
+        try {
+          const response = await axios.get("http://localhost:5000/v1/api/auth/get_all_users");
+          setUsers(response.data.metadata);
+        } catch (error) {
+          console.error("Error fetching users:", error);
+        }
+      };
+
+      // Call fetchUsers to reload the users list with updated statuses
+      fetchUsers();
+    } catch (error) {
+      console.error("Error blocking user:", error);
+    }
+  };
 
   const filteredItems = users.filter((user) =>
     user.email.toLowerCase().includes(searchItem.toLowerCase())
@@ -41,6 +63,7 @@ export default function ManageUser() {
             <th style={{ ...styles.thTd, ...styles.th }}>Created At</th>
             <th style={{ ...styles.thTd, ...styles.th }}>Update At</th>
             <th style={{ ...styles.thTd, ...styles.th }}>Status</th>
+            <th style={{ ...styles.thTd, ...styles.th }}>Action</th>
           </tr>
         </thead>
         <tbody>
@@ -63,19 +86,37 @@ export default function ManageUser() {
                 </span>
               </td>
               <td style={styles.thTd}>
-                {/* <button
-                  style={styles.blockBtn}
-                  onMouseOver={(e) =>
-                    (e.currentTarget.style.backgroundColor =
-                      styles.blockBtnHover.backgroundColor)
-                  }
-                  onMouseOut={(e) =>
-                    (e.currentTarget.style.backgroundColor =
-                      styles.blockBtn.backgroundColor)
-                  }
-                >
-                  <FontAwesomeIcon icon={faBan} /> Block
-                </button> */}
+                {user.status === "active" ? (
+                  <button
+                    style={styles.blockBtn}
+                    onClick={() => handleBlock(user.email)}
+                    onMouseOver={(e) =>
+                      (e.currentTarget.style.backgroundColor =
+                        styles.blockBtnHover.backgroundColor)
+                    }
+                    onMouseOut={(e) =>
+                      (e.currentTarget.style.backgroundColor =
+                        styles.blockBtn.backgroundColor)
+                    }
+                  >
+                    <FontAwesomeIcon icon={faBan} /> Block
+                  </button>
+                ) : (
+                  <button
+                    style={styles.blockBtn}
+                    onClick={() => handleBlock(user.email)}
+                    onMouseOver={(e) =>
+                      (e.currentTarget.style.backgroundColor =
+                        styles.blockBtnHover.backgroundColor)
+                    }
+                    onMouseOut={(e) =>
+                      (e.currentTarget.style.backgroundColor =
+                        styles.blockBtn.backgroundColor)
+                    }
+                  >
+                    <FontAwesomeIcon icon={faUndo} /> Unblock
+                  </button>
+                )}
               </td>
             </tr>
           ))}

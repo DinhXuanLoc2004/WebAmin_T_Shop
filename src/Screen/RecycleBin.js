@@ -17,24 +17,22 @@ const RecycleBin = () => {
       try {
         // Fetch deleted products
         const productResult = await axios.post(
-          "http://localhost:5000/v1/api/product/get_all_products",
-          { "is_delete": true}
+          `http://localhost:5000/v1/api/product/get_all_products?is_delete=${true}`
         );
         setProducts(productResult.data.metadata.products);
 
         // Fetch deleted brands
         const brandResult = await axios.get(
-          "http://localhost:5000/v1/api/brand/get_all_brands"
+          `http://localhost:5000/v1/api/brand/get_all_brands?is_delete=${true}`
         );
-        setBrands(brandResult.data.brands);
-        console.log(brandResult.data.brands)
+        setBrands(brandResult.data.metadata);
 
-        // Fetch deleted categories
-        const categoryResult = await axios.get(
-          "http://localhost:5000/v1/api/category/get_all_categories"
-        );
-        setCategories(categoryResult.data.metadata.categories);
-        console.log(categoryResult.data.metadata.categories)
+        // // Fetch deleted categories
+        // const categoryResult = await axios.get(
+        //   "http://localhost:5000/v1/api/category/get_all_categories"
+        // );
+        // setCategories(categoryResult.data.metadata.categories);
+        // console.log(categoryResult.data.metadata.categories)
 
         // // Fetch deleted colors and sizes
         // const colorSizeResult = await axios.post(

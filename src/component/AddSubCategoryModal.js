@@ -8,6 +8,7 @@ export default function AddSubCategoryModal({ isOpen, onRequestClose, selectedCa
   const [subCategoryName, setSubCategoryName] = useState("");
   const [imageFile, setImageFile] = useState(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false); // Thêm state cho loading
 
   // Hàm xử lý thêm danh mục đời 2
   const handleAddSubCategory = async () => {
@@ -27,24 +28,26 @@ export default function AddSubCategoryModal({ isOpen, onRequestClose, selectedCa
     formData.append("parent_id", selectedCategory._id);
     if (imageFile) formData.append("image", imageFile);
 
+    setLoading(true); // Bắt đầu quá trình tải
+
     try {
-      const response = await axios.post("http://localhost:5000/v1/api/category/add_category", formData, {
+      const response = await axios.post("https://backenddatn-production.up.railway.app/v1/api/category/add_category", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
 
-      if (response.status === 200) {
-        onSubCategoryAdded(response.data.metadata.category);
+      if (response.status === 201) {
+        onRequestClose(); // Đóng modal sau khi thêm thành công
         setSubCategoryName("");
         setImageFile(null);
         setError("");
-        alert("Add Success!");
-        onRequestClose(); 
       }
     } catch (error) {
       console.error("Lỗi khi thêm danh mục đời 2:", error);
       setError("Đã xảy ra lỗi khi thêm danh mục đời 2.");
+    } finally {
+      setLoading(false); // Dừng quá trình tải sau khi hoàn thành
     }
   };
 
@@ -75,10 +78,18 @@ export default function AddSubCategoryModal({ isOpen, onRequestClose, selectedCa
       <input type="file" onChange={handleFileChange} style={styles.fileInput} />
       {imageFile && <p style={styles.fileName}>Ảnh đã chọn: {imageFile.name}</p>}
 
+      {/* Overlay loading */}
+      {loading && (
+        <div style={styles.loadingOverlay}>
+          <div style={styles.loader}></div>
+        </div>
+      )}
+
       {/* Nút Thêm */}
-      <button onClick={handleAddSubCategory} style={styles.addButton}>
-        Thêm
+      <button onClick={handleAddSubCategory} style={styles.addButton} disabled={loading}>
+        {loading ? "Đang tải..." : "Thêm"}
       </button>
+
       {error && <p style={styles.errorText}>{error}</p>}
 
       {/* Nút Đóng */}
@@ -104,7 +115,14 @@ const modalStyles = {
     backgroundColor: "#fff",
   },
 };
-
+// Thêm keyframe cho hiệu ứng xoay
+const styleSheet = document.styleSheets[0];
+styleSheet.insertRule(`
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`, styleSheet.cssRules.length);
 const styles = {
   header: {
     textAlign: "center",
@@ -155,5 +173,26 @@ const styles = {
     fontSize: "14px",
     marginTop: "10px",
     textAlign: "center",
+  },
+  loadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000,
+    borderRadius: "12px",
+  },
+  loader: {
+    border: "4px solid #f3f3f3",
+    borderTop: "4px solid #00a8ff",
+    borderRadius: "50%",
+    width: "50px",
+    height: "50px",
+    animation: "spin 1s linear infinite",
   },
 };

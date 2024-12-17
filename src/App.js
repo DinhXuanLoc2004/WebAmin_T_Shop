@@ -7,7 +7,7 @@ import {
   Navigate,
 } from "react-router-dom";
 import React, { useEffect, useState } from "react";
-import { generateToken, messaging } from "./config/firebase-config";
+import { generateToken, messaging } from "./Screen/LoginScreen";
 import { onMessage } from "firebase/messaging";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";

@@ -14,12 +14,12 @@ export default function ManageCategory() {
   const [nameCategory, setNameCategory] = useState("");
   const [parentId, setParentId] = useState("");
   const [image, setImage] = useState("");
-  
+
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:5000/v1/api/category/get_categories/"
+          "http://localhost:5000/v1/api/category/get_categories?is_delete=false"
         );
         setMainCategories(response.data.metadata.categories);
       } catch (error) {
@@ -57,7 +57,7 @@ export default function ManageCategory() {
 
       // Gửi request bằng Axios
       await axios.put(
-        `http://localhost:5000/v1/api/category/update_category?id_category=${categoryToUpdate._id}`,
+        `http://localhost:5000/v1/api/category/update_category?_id=${categoryToUpdate._id}`,
         formData,
         {
           headers: {
@@ -82,25 +82,25 @@ export default function ManageCategory() {
   };
 
   //delete
-  const handleDeleteCategory = async (id_category) => {
+  const handleDeleteCategory = async (_id) => {
     try {
-      console.log("ID cần xóa:", id_category); // Kiểm tra giá trị id_category
+      console.log("ID cần xóa:", _id); // Kiểm tra giá trị id_category
       await axios.delete(
-        `http://localhost:5000/v1/api/category/delete_category`,
+        `http://localhost:5000/v1/api/category/toggle_delete_category`,
         {
-          params: { id_category },
+          params: { _id },
         }
       );
 
       // Cập nhật lại danh sách sau khi xóa
       setMainCategories(
-        mainCategories.filter((category) => category._id !== id_category)
+        mainCategories.filter((category) => category._id !== _id)
       );
       setSubCategories(
-        subCategories.filter((category) => category._id !== id_category)
+        subCategories.filter((category) => category._id !== _id)
       );
       setChildCategories(
-        childCategories.filter((category) => category._id !== id_category)
+        childCategories.filter((category) => category._id !== _id)
       );
 
       console.log("Xóa danh mục thành công");
@@ -112,7 +112,9 @@ export default function ManageCategory() {
   //modal add category
   const [isMainModalOpen, setIsMainModalOpen] = useState(false);
   const openMainModal = () => setIsMainModalOpen(true);
-  const closeMainModal = () => setIsMainModalOpen(false);
+  const closeMainModal = () => {
+    setIsMainModalOpen(false);
+  };
   const [isSubModalOpen, setIsSubModalOpen] = useState(false);
   const openSubModal = () => setIsSubModalOpen(true);
   const closeSubModal = () => setIsSubModalOpen(false);
@@ -129,130 +131,86 @@ export default function ManageCategory() {
   const [selectedChildCategory, setSelectedChildCategory] = useState(null);
   const [product, setProducts] = useState([]);
 
+  // Fetch Main Categories
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchMainCategories = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:5000/v1/api/category/get_categories/"
+          "http://localhost:5000/v1/api/category/get_categories?is_delete=false"
         );
-        const categories = response.data.metadata.categories;
-
-        // Lọc các danh mục có is_delete === false hoặc không có trường is_delete
-        const filteredCategories = categories.filter(
-          (category) =>
-            category.is_delete === false ||
-            !category.hasOwnProperty("is_delete")
-        );
-
-        // Kiểm tra xem có đúng dữ liệu không
-        console.log("Filtered Main Categories:", filteredCategories);
-
-        setMainCategories(filteredCategories);
+        setMainCategories(response.data.metadata.categories || []);
       } catch (error) {
-        console.error("Lỗi: ", error);
+        console.error("Lỗi khi lấy main categories: ", error);
       }
     };
-    fetchData();
+
+    const interval = setInterval(() => {
+      fetchMainCategories();
+    }, 5000); // Cập nhật mỗi 5 giây
+
+    // Dọn dẹp interval khi component bị hủy
+    return () => clearInterval(interval);
   }, []);
 
+  // Fetch Sub Categories khi Main Categories thay đổi
+  // Tự động tải danh mục con khi danh mục cha thay đổi
   useEffect(() => {
-    if (mainCategories.length > 0) {
-      const parentId1 = mainCategories[0]._id;
-      const fetchSubCategories = async () => {
-        try {
-          const response = await axios.get(
-            `http://localhost:5000/v1/api/category/get_categories/${parentId1}`
-          );
-          const subCategories = response.data.metadata.categories;
-
-          // Lọc các subCategories có is_delete === false hoặc không có trường is_delete
-          const filteredSubCategories = subCategories.filter(
-            (category) =>
-              category.is_delete === false ||
-              !category.hasOwnProperty("is_delete")
-          );
-
-          console.log("Filtered Sub Categories:", filteredSubCategories);
-
-          setSubCategories(filteredSubCategories);
-        } catch (error) {
-          console.error("Lỗi khi lấy sub categories: ", error);
-        }
-      };
-      fetchSubCategories();
+    if (!selectedCategory?._id) {
+      setSubCategories([]); // Xóa subcategories nếu không có danh mục cha
+      return;
     }
-  }, [mainCategories]);
 
-  useEffect(() => {
-    if (subCategories.length > 0) {
-      const parentId2 = subCategories[0]._id;
-      const fetchChildCategories = async () => {
-        try {
-          const response = await axios.get(
-            `http://192.168.1.51:5000/v1/api/category/get_categories/${parentId2}`
-          );
-          const childCategories = response.data.metadata.categories;
-
-          // Lọc các childCategories có is_delete === false hoặc không có trường is_delete
-          const filteredChildCategories = childCategories.filter(
-            (category) =>
-              category.is_delete === false ||
-              !category.hasOwnProperty("is_delete")
-          );
-
-          console.log("Filtered Child Categories:", filteredChildCategories);
-
-          setChildCategories(filteredChildCategories);
-        } catch (error) {
-          console.error("Lỗi khi lấy child categories: ", error);
-        }
-      };
-      fetchChildCategories();
-    }
-  }, [subCategories]);
-
-  const handleCategoryClick = (category) => {
-    setSelectedCategory(category);
-    setSubCategories([]);
-    setChildCategories([]);
     const fetchSubCategories = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:5000/v1/api/category/get_categories/${category._id}`
+          `http://localhost:5000/v1/api/category/get_categories?parent_id=${selectedCategory._id}&is_delete=false`
         );
-        setSubCategories(response.data.metadata.categories);
+        setSubCategories(response.data.metadata.categories || []);
       } catch (error) {
         console.error("Lỗi khi lấy sub categories: ", error);
       }
     };
-    fetchSubCategories();
-  };
 
-  const handleSubCategoryClick = (subCategory) => {
-    if (!selectedCategory) {
+    fetchSubCategories();
+  }, [selectedCategory]);
+
+  // Tự động tải danh mục cháu khi danh mục con thay đổi
+  useEffect(() => {
+    if (!selectedSubCategory?._id) {
+      setChildCategories([]); // Xóa childCategories nếu không có danh mục con
       return;
     }
-    setSelectedSubCategory(subCategory);
-    setChildCategories([]);
+
     const fetchChildCategories = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:5000/v1/api/category/get_categories/${subCategory._id}`
+          `http://localhost:5000/v1/api/category/get_categories?parent_id=${selectedSubCategory._id}&is_delete=false`
         );
-
-        setChildCategories(response.data.metadata.categories);
+        setChildCategories(response.data.metadata.categories || []);
       } catch (error) {
         console.error("Lỗi khi lấy child categories: ", error);
       }
     };
+
     fetchChildCategories();
+  }, [selectedSubCategory]);
+
+  // Hàm xử lý khi click vào danh mục cha
+  const handleCategoryClick = (category) => {
+    setSelectedCategory(category); // Chọn danh mục cha
+    setSelectedSubCategory(null); // Reset danh mục con
+    setSelectedChildCategory(null); // Reset danh mục cháu
   };
 
+  // Hàm xử lý khi click vào danh mục con
+  const handleSubCategoryClick = (subCategory) => {
+    setSelectedSubCategory(subCategory); // Chọn danh mục con
+    setSelectedChildCategory(null); // Reset danh mục cháu
+  };
+
+  // Hàm xử lý khi click vào danh mục cháu
   const handleChildCategoryClick = (childCategory) => {
-    if (!selectedSubCategory) {
-      return;
-    }
-    setSelectedChildCategory(childCategory);
+    setSelectedChildCategory(childCategory); // Chọn danh mục cháu
   };
 
   useEffect(() => {
@@ -289,6 +247,7 @@ export default function ManageCategory() {
         {mainCategories.map((category) => (
           <div
             key={category._id}
+            className={selectedCategory?._id === category._id ? "active" : ""}
             style={
               selectedCategory?._id === category._id
                 ? styles.selectedItem
@@ -302,11 +261,13 @@ export default function ManageCategory() {
               style={styles.icon}
               onClick={() => openUpdateModal(category)}
             />
-            <FontAwesomeIcon
-              icon={faTrash}
-              style={styles.icon}
-              onClick={() => handleDeleteCategory(category._id)}
-            />
+            {category.can_be_delete && (
+              <FontAwesomeIcon
+                icon={faTrash}
+                style={styles.icon}
+                onClick={() => handleDeleteCategory(category._id)}
+              />
+            )}
           </div>
         ))}
         <button onClick={openMainModal} style={styles.addButton}>
@@ -328,6 +289,9 @@ export default function ManageCategory() {
           {subCategories.map((subCategory) => (
             <div
               key={subCategory._id}
+              className={
+                selectedSubCategory?._id === subCategory._id ? "active" : ""
+              }
               style={
                 selectedSubCategory?._id === subCategory._id
                   ? styles.selectedItem
@@ -342,11 +306,13 @@ export default function ManageCategory() {
                 style={styles.icon}
                 onClick={() => openUpdateModal(subCategory)}
               />
-              <FontAwesomeIcon
-                icon={faTrash}
-                style={styles.icon}
-                onClick={() => handleDeleteCategory(subCategory._id)}
-              />
+              {subCategory.can_be_delete && (
+                <FontAwesomeIcon
+                  icon={faTrash}
+                  style={styles.icon}
+                  onClick={() => handleDeleteCategory(subCategory._id)}
+                />
+              )}
             </div>
           ))}
           <button onClick={openSubModal} style={styles.addButton}>
@@ -369,6 +335,9 @@ export default function ManageCategory() {
         {childCategories.map((childCategory) => (
           <div
             key={childCategory._id}
+            className={
+              selectedChildCategory?._id === childCategory._id ? "active" : ""
+            }
             style={
               selectedChildCategory?._id === childCategory._id
                 ? styles.selectedItem
@@ -383,11 +352,13 @@ export default function ManageCategory() {
               style={styles.icon}
               onClick={() => openUpdateModal(childCategory)}
             />
-            <FontAwesomeIcon
-              icon={faTrash}
-              style={styles.icon}
-              onClick={() => handleDeleteCategory(childCategory._id)}
-            />
+            {childCategory.can_be_delete && (
+              <FontAwesomeIcon
+                icon={faTrash}
+                style={styles.icon}
+                onClick={() => handleDeleteCategory(childCategory._id)}
+              />
+            )}
           </div>
         ))}
         <button onClick={openChildModal} style={styles.addButton}>
@@ -422,75 +393,92 @@ export default function ManageCategory() {
         </div>
       </div>
       {isUpdateModalOpen && (
-  <div style={styles.modal}>
-    <div style={styles.modalContent}>
-      <h3 style={styles.modalTitle}>Update Category</h3>
+        <div style={styles.modal}>
+          <div style={styles.modalContent}>
+            <h3 style={styles.modalTitle}>Update Category</h3>
 
-      {/* Trường nhập Name */}
-      <div style={styles.inputGroup}>
-        <label style={styles.label}>Name:</label>
-        <input
-          type="text"
-          value={nameCategory}
-          onChange={(e) => setNameCategory(e.target.value)}
-          style={styles.input}
-        />
-      </div>
+            {/* Trường nhập Name */}
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Name:</label>
+              <input
+                type="text"
+                value={nameCategory}
+                onChange={(e) => setNameCategory(e.target.value)}
+                style={styles.input}
+              />
+            </div>
 
-      {/* Trường nhập Parent ID */}
-      <div style={styles.inputGroup}>
-        <label style={styles.label}>Parent ID:</label>
-        <input
-          type="text"
-          value={parentId}
-          onChange={(e) => setParentId(e.target.value)}
-          style={styles.input}
-        />
-      </div>
+            {/* Trường chọn Parent ID */}
+            {/* Trường chọn Parent ID chỉ hiển thị nếu depth < 2 */}
+            {categoryToUpdate.depth < 2 && (
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>Parent Category:</label>
+                <select
+                  value={parentId || ""}
+                  onChange={(e) => setParentId(e.target.value)}
+                  style={styles.select}
+                >
+                  <option value="">No Parent</option>
+                  {mainCategories
+                    .filter(
+                      (cat) =>
+                        cat.depth === categoryToUpdate.depth - 1 &&
+                        !cat.is_delete // Bỏ qua danh mục đã bị xóa
+                    )
+                    .map((cat) => (
+                      <option key={cat._id} value={cat._id}>
+                        {cat.name_category}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            )}
 
-      {/* Chọn ảnh */}
-      <div style={styles.inputGroup}>
-        <label style={styles.label}>Image:</label>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => {
-            const file = e.target.files[0];
-            setImage(file);
-          }}
-          style={styles.fileInput}
-        />
-      </div>
+            {/* Chọn ảnh */}
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>Image:</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  setImage(file);
+                }}
+                style={styles.fileInput}
+              />
+            </div>
 
-      {/* Xem trước ảnh */}
-      {image && (
-        <div style={styles.previewContainer}>
-          <p style={styles.previewText}>Selected Image:</p>
-          <img
-            src={
-              typeof image === "string"
-                ? image
-                : URL.createObjectURL(image)
-            }
-            alt="Preview"
-            style={styles.previewImage}
-          />
+            {/* Xem trước ảnh */}
+            {image && (
+              <div style={styles.previewContainer}>
+                <p style={styles.previewText}>Selected Image:</p>
+                <img
+                  src={
+                    typeof image === "string"
+                      ? image
+                      : URL.createObjectURL(image)
+                  }
+                  alt="Preview"
+                  style={styles.previewImage}
+                />
+              </div>
+            )}
+
+            {/* Nút hành động */}
+            <div style={styles.buttonGroup}>
+              <button
+                style={styles.updateButton}
+                onClick={handleUpdateCategory}
+              >
+                Update
+              </button>
+              <button style={styles.cancelButton} onClick={closeUpdateModal}>
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
-
-      {/* Nút hành động */}
-      <div style={styles.buttonGroup}>
-        <button style={styles.updateButton} onClick={handleUpdateCategory}>
-          Update
-        </button>
-        <button style={styles.cancelButton} onClick={closeUpdateModal}>
-          Cancel
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
     </div>
   );
 }
@@ -566,7 +554,7 @@ const styles = {
     flexWrap: "wrap",
     justifyContent: "space-between",
     gap: "20px",
-    width: "100%",
+    width: "1000px",
   },
   icon: {
     cursor: "pointer",

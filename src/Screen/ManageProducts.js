@@ -7,60 +7,62 @@ import {
   faChevronRight,
   faStar,
   faComment,
-  faPlus,
 } from "@fortawesome/free-solid-svg-icons";
 import Modal from "react-bootstrap/Modal";
 import "../Css/Dialog.css";
+import "../Css/Spinner.css";
 import axios from "axios";
 import axiosInstance from "../helper/axiosIntercreptor";
 import ColorAndSize from "../component/ColorAndSize";
 import DeleteDialog from "../component/DeleteDialog";
+import AddProduct from "../component/AddProduct";
+import EditProduct from "../component/EditProduct";
 
 export default function ManageProducts() {
   const [products, setProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [selectedProduct1, setSelectedProduct1] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isAddProductOpen, setIsAddProductOpen] = useState(false);
-  const [newProductData, setNewProductData] = useState({
-    name_product: "",
-    description: "",
-    images: [],
-    category_id: "",
-    brand_id: "",
-    product_variants: [],
-  });
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [productIdToDelete, setProductIdToDelete] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleEditButtonClick = async (productId) => {
+  const handlePrevClick = () => {
+    setCurrentIndex((prevIndex) =>
+      prevIndex === 0
+        ? selectedProduct.images_product.length - 1
+        : prevIndex - 1
+    );
+  };
+
+  const handleNextClick = () => {
+    setCurrentIndex((prevIndex) =>
+      prevIndex === selectedProduct.images_product.length - 1
+        ? 0
+        : prevIndex + 1
+    );
+  };
+
+  const handleThumbnailClick = (index) => {
+    setCurrentIndex(index);
+  };
+
+  const fetchProducts = async () => {
     try {
-      const response = await axios.get(
-        `http://localhost:5000/v1/api/product/get_product_detail_by_id?product_id=${productId}`
+      const result = await axios.post(
+        `http://localhost:5000/v1/api/product/get_all_products?is_delete=${false}`
       );
-      const productDetails = response.data.metadata;
-      setSelectedProduct1(productDetails);
-      console.log(productDetails);
+      setProducts(result.data.metadata.products);
     } catch (error) {
-      console.error("Error fetching product details:", error);
-      alert("Error fetching product details");
+      console.error("Lỗi khi gọi API:", error);
     }
   };
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const result = await axios.post(
-          "http://localhost:5000/v1/api/product/get_all_products",
-          { is_delete: false }
-        );
-        setProducts(result.data.metadata.products);
-      } catch (error) {
-        console.error("Lỗi khi gọi API:", error);
-      }
-    };
     fetchProducts();
+    return () => {
+      setProducts([]);
+    };
   }, []);
 
   const handleProductClick = async (productId) => {
@@ -84,294 +86,32 @@ export default function ManageProducts() {
   const handleDeleteProduct = async (productId) => {
     try {
       await axios.delete(
-        `http://localhost:5000/v1/api/product/delete_product?product_id=${productId}`
+        `http://localhost:5000/v1/api/product/toggle_delete_product?_id=${productId}`
       );
-      // Refresh the product list after deletion
-      const result = await axios.post(
-        "http://localhost:5000/v1/api/product/get_all_products",
-        { is_delete: false }
-      );
-      setProducts(result.data.metadata.products);
-      setIsDeleteDialogOpen(false); // Close the delete dialog
+      fetchProducts();
+      setIsDeleteDialogOpen(false);
     } catch (error) {
       console.error(error);
-      alert("Error deleting product");
     }
   };
 
   const handleDeleteButtonClick = (productId, event) => {
-    event.stopPropagation(); // Prevent row click
-    setProductIdToDelete(productId); // Set the product ID to be deleted
-    setIsDeleteDialogOpen(true); // Show the delete confirmation dialog
-  };
-
-  const handlePrevClick = () => {
-    setCurrentIndex((prevIndex) =>
-      prevIndex === 0
-        ? selectedProduct.images_product.length - 1
-        : prevIndex - 1
-    );
-  };
-
-  const handleNextClick = () => {
-    setCurrentIndex((prevIndex) =>
-      prevIndex === selectedProduct.images_product.length - 1
-        ? 0
-        : prevIndex + 1
-    );
-  };
-
-  const handleThumbnailClick = (index) => {
-    setCurrentIndex(index);
-  };
-
-  const openAddProductModal = () => {
-    setIsAddProductOpen(true);
-  };
-
-  const closeAddProductModal = () => {
-    setIsAddProductOpen(false);
-    setNewProductData({
-      name_product: "",
-      description: "",
-      images: [],
-      category_id: "",
-      brand_id: "",
-      product_variants: [],
-    });
-  };
-
-  const handleAddProduct = async () => {
-    try {
-      const formData = new FormData();
-      formData.append("name_product", newProductData.name_product);
-      formData.append("description", newProductData.description);
-      formData.append("category_id", newProductData.category_id);
-      formData.append("brand_id", newProductData.brand_id);
-      formData.append(
-        "product_variants",
-        JSON.stringify(newProductData.product_variants)
-      );
-
-      newProductData.images.forEach((image) => {
-        formData.append("images", image);
-      });
-
-      await axiosInstance.post(
-        "/product/add_product",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-
-      closeAddProductModal();
-
-      const result = await axios.post(
-        "http://localhost:5000/v1/api/product/get_all_products",
-        { is_delete: false }
-      );
-      setProducts(result.data.metadata.products);
-    } catch (error) {
-      console.error("Error adding product:", error);
-    }
-  };
-
-  const handleImageUpload = (event) => {
-    setNewProductData({
-      ...newProductData,
-      images: Array.from(event.target.files),
-    });
-  };
-
-  const handleAddVariant = () => {
-    setNewProductData({
-      ...newProductData,
-      product_variants: [
-        ...newProductData.product_variants,
-        { quantity: "", price: "", size_id: "", image_product_color_id: "" },
-      ],
-    });
-  };
-
-  const handleVariantChange = (index, field, value) => {
-    const updatedVariants = [...newProductData.product_variants];
-    if (field === "quantity" || field === "price") {
-      value = value === "" || value > 0 ? value : updatedVariants[index][field];
-    }
-    updatedVariants[index][field] = value;
-    setNewProductData({
-      ...newProductData,
-      product_variants: updatedVariants,
-    });
+    event.stopPropagation();
+    setProductIdToDelete(productId);
+    setIsDeleteDialogOpen(true);
   };
 
   return (
     <div style={styles.container}>
       <ColorAndSize />
 
-      <button style={styles.addBtn} onClick={openAddProductModal}>
-        <FontAwesomeIcon icon={faPlus} style={{ marginRight: "5px" }} /> Add
-        Product
-      </button>
+      <AddProduct onProductAdded={fetchProducts} />
 
       <DeleteDialog
         open={isDeleteDialogOpen}
-        onClose={() => setIsDeleteDialogOpen(false)} // Close the dialog without deleting
-        onConfirm={() => handleDeleteProduct(productIdToDelete)} // Confirm deletion
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onConfirm={() => handleDeleteProduct(productIdToDelete)}
       />
-
-      <Modal show={isAddProductOpen} onHide={closeAddProductModal} centered>
-        <Modal.Header closeButton style={styles.modalHeader}>
-          <Modal.Title style={styles.modalTitle}>Add New Product</Modal.Title>
-        </Modal.Header>
-        <Modal.Body style={styles.modalBody1}>
-          <form>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Product Name:</label>
-              <input
-                type="text"
-                value={newProductData.name_product}
-                onChange={(e) =>
-                  setNewProductData({
-                    ...newProductData,
-                    name_product: e.target.value,
-                  })
-                }
-                style={styles.input}
-              />
-            </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Description:</label>
-              <textarea
-                value={newProductData.description}
-                onChange={(e) =>
-                  setNewProductData({
-                    ...newProductData,
-                    description: e.target.value,
-                  })
-                }
-                style={styles.textarea}
-              ></textarea>
-            </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Category ID:</label>
-              <input
-                type="text"
-                value={newProductData.category_id}
-                onChange={(e) =>
-                  setNewProductData({
-                    ...newProductData,
-                    category_id: e.target.value,
-                  })
-                }
-                style={styles.input}
-              />
-            </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Brand ID:</label>
-              <input
-                type="text"
-                value={newProductData.brand_id}
-                onChange={(e) =>
-                  setNewProductData({
-                    ...newProductData,
-                    brand_id: e.target.value,
-                  })
-                }
-                style={styles.input}
-              />
-            </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Images:</label>
-              <input
-                type="file"
-                multiple
-                onChange={handleImageUpload}
-                style={styles.inputFile}
-              />
-            </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Product Variants:</label>
-              <div style={styles.variantContainer}>
-                {newProductData.product_variants.map((variant, index) => (
-                  <div key={index} style={{ marginBottom: "10px" }}>
-                    <input
-                      type="text"
-                      placeholder="Size ID"
-                      value={variant.size_id}
-                      onChange={(e) =>
-                        handleVariantChange(index, "size_id", e.target.value)
-                      }
-                      style={styles.input}
-                    />
-                    <input
-                      type="text"
-                      placeholder="Image Color ID"
-                      value={variant.image_product_color_id}
-                      onChange={(e) =>
-                        handleVariantChange(
-                          index,
-                          "image_product_color_id",
-                          e.target.value
-                        )
-                      }
-                      style={styles.input}
-                    />
-                    <input
-                      type="number"
-                      placeholder="Enter quantity"
-                      value={variant.quantity}
-                      onChange={(e) =>
-                        handleVariantChange(index, "quantity", e.target.value)
-                      }
-                      style={styles.input}
-                      min="1" // Ensure only positive numbers
-                    />
-                    <input
-                      type="number"
-                      placeholder="Enter price"
-                      value={variant.price}
-                      onChange={(e) =>
-                        handleVariantChange(index, "price", e.target.value)
-                      }
-                      style={styles.input}
-                      min="0.01" // Ensure only positive numbers, with a minimum of 0.01
-                    />
-                    <div>
-                      {newProductData.product_variants.length >= 2 && (
-                        <hr
-                          style={{ margin: "20px 0", border: "1px solid #ccc" }}
-                        />
-                      )}
-                    </div>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={handleAddVariant}
-                  style={styles.buttonAddVariant}
-                >
-                  Add Variant
-                </button>
-              </div>
-            </div>
-          </form>
-        </Modal.Body>
-        <Modal.Footer style={styles.modalFooter}>
-          <button onClick={handleAddProduct} style={styles.button}>
-            Save
-          </button>
-          <button
-            onClick={closeAddProductModal}
-            style={{ ...styles.button, ...styles.buttonCancel }}
-          >
-            Cancel
-          </button>
-        </Modal.Footer>
-      </Modal>
 
       <table style={styles.table}>
         <thead>
@@ -389,14 +129,15 @@ export default function ManageProducts() {
         </thead>
         <tbody>
           {products.map((product, index) => (
-            <tr
-              key={index}
-              style={{ cursor: "pointer" }}
-              onClick={() => handleProductClick(product._id)}
-            >
+            <tr key={index} style={{ cursor: "pointer" }}>
               <td style={styles.thTdTable}>{index + 1}</td>
               <td style={styles.thTd}>
-                <img src={product.thumb} alt="Product" style={styles.img} />
+                <img
+                  src={product.thumb}
+                  alt="Product"
+                  style={styles.img}
+                  onClick={() => handleProductClick(product._id)} // Mở modal khi nhấn vào ảnh
+                />
               </td>
               <td style={styles.thTdTable}>{product.name_product}</td>
               <td style={styles.thTdTable}>{product.name_brand}</td>
@@ -413,15 +154,7 @@ export default function ManageProducts() {
               <td style={styles.thTdTable}>{product.inventory_quantity}</td>
               <td style={styles.thTdTable}>${product.price_min}</td>
               <td style={styles.thTd}>
-                <button
-                  style={styles.editBtn}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    handleEditButtonClick(product._id);
-                  }}
-                >
-                  <FontAwesomeIcon icon={faEdit} /> Edit
-                </button>
+                <EditProduct productId={product._id} />
                 <button
                   style={styles.deleteBtn}
                   onClick={(e) => handleDeleteButtonClick(product._id, e)}
@@ -444,25 +177,21 @@ export default function ManageProducts() {
         >
           <Modal.Body style={styles.modalBody}>
             <div style={styles.galleryContainer}>
-              {/* Main Image */}
               <div>
                 {selectedProduct && selectedProduct.images_product && (
                   <img
-                    src={selectedProduct.images_product[currentIndex].url} // Access url from images_product array
+                    src={selectedProduct.images_product[currentIndex].url}
                     alt="Main"
                     style={styles.mainImage}
                   />
                 )}
               </div>
 
-              {/* Navigation Arrows and Thumbnails */}
               <div style={styles.arrowThumbnailContainer}>
-                {/* Left Arrow */}
                 <button onClick={handlePrevClick} style={styles.arrowButton}>
                   <FontAwesomeIcon icon={faChevronLeft} />
                 </button>
 
-                {/* Thumbnails */}
                 <div style={styles.thumbnailContainer}>
                   {selectedProduct.images_product.map((image, index) => (
                     <div
@@ -484,7 +213,6 @@ export default function ManageProducts() {
                   ))}
                 </div>
 
-                {/* Right Arrow */}
                 <button onClick={handleNextClick} style={styles.arrowButton}>
                   <FontAwesomeIcon icon={faChevronRight} />
                 </button>
