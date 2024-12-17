@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faTrash,
-  faEdit,
   faChevronLeft,
   faChevronRight,
   faStar,
@@ -20,6 +19,7 @@ import EditProduct from "../component/EditProduct";
 
 export default function ManageProducts() {
   const [products, setProducts] = useState([]);
+  const [searchItem, setSearchItem] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -53,6 +53,7 @@ export default function ManageProducts() {
         `http://localhost:5000/v1/api/product/get_all_products?is_delete=${false}`
       );
       setProducts(result.data.metadata.products);
+      console.log(result.data.metadata.products);
     } catch (error) {
       console.error("Lỗi khi gọi API:", error);
     }
@@ -72,6 +73,7 @@ export default function ManageProducts() {
         `http://localhost:5000/v1/api/product/get_detail_product?product_id=${productId}`
       );
       setSelectedProduct(result.data.metadata);
+      console.log(result.data.metadata);
       setIsDialogOpen(true);
     } catch (error) {
       console.error("Error fetching product details:", error);
@@ -101,9 +103,21 @@ export default function ManageProducts() {
     setIsDeleteDialogOpen(true);
   };
 
+  const filteredItems = products.filter((product) =>
+    product.name_product.toLowerCase().includes(searchItem.toLowerCase())
+  );
+
   return (
-    <div style={styles.container}>
+    <div style={styles.container(isDeleteDialogOpen)}>
       <ColorAndSize />
+
+      <input
+        type="text"
+        placeholder="Search by name product"
+        value={searchItem}
+        onChange={(e) => setSearchItem(e.target.value)}
+        style={styles.searchInput}
+      />
 
       <AddProduct onProductAdded={fetchProducts} />
 
@@ -124,11 +138,12 @@ export default function ManageProducts() {
             <th style={styles.thTd}>Rate</th>
             <th style={styles.thTd}>Quantity</th>
             <th style={styles.thTd}>Price</th>
+            <th style={styles.thTd}>Discount</th>
             <th style={styles.thTd}>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {products.map((product, index) => (
+          {filteredItems.map((product, index) => (
             <tr key={index} style={{ cursor: "pointer" }}>
               <td style={styles.thTdTable}>{index + 1}</td>
               <td style={styles.thTd}>
@@ -152,9 +167,20 @@ export default function ManageProducts() {
                 </span>
               </td>
               <td style={styles.thTdTable}>{product.inventory_quantity}</td>
-              <td style={styles.thTdTable}>${product.price_min}</td>
+              <td style={styles.thTdTable}>
+                {new Intl.NumberFormat("vi-VN", {
+                  style: "currency",
+                  currency: "VND",
+                }).format(product.price_min)}
+              </td>
+              <td style={styles.thTdTable}>{product.discount}%</td>
               <td style={styles.thTd}>
-                <EditProduct productId={product._id} />
+                <button style={{ border: "none", background: "white" }}>
+                  <EditProduct
+                    productId={product._id}
+                    onProductUpdated={fetchProducts}
+                  />
+                </button>
                 <button
                   style={styles.deleteBtn}
                   onClick={(e) => handleDeleteButtonClick(product._id, e)}
@@ -222,21 +248,36 @@ export default function ManageProducts() {
             <div style={styles.productInfo}>
               <div>
                 <h1>{selectedProduct.name_product}</h1>
-                <div style={styles.priceRateContainer}>
-                  <div style={styles.priceContainer}>
-                    <h4 style={{ fontWeight: "bold" }}>
-                      ${selectedProduct.price}
-                    </h4>
-                    <h6>
-                      <span
-                        style={{
-                          textDecoration: "line-through",
-                          color: "gray",
-                        }}
-                      >
-                        ${selectedProduct.price}
-                      </span>
-                    </h6>
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex" }}>
+                      <h4 style={{ fontWeight: "bold" }}>
+                        {new Intl.NumberFormat("vi-VN", {
+                          style: "currency",
+                          currency: "VND",
+                        }).format(
+                          selectedProduct.price -
+                            selectedProduct.price *
+                              (selectedProduct.discount / 100)
+                        )}
+                      </h4>
+                      <h6 style={{ marginLeft: "10px" }}>
+                        <span
+                          style={{
+                            textDecoration: "line-through",
+                            color: "gray",
+                          }}
+                        >
+                          {new Intl.NumberFormat("vi-VN", {
+                            style: "currency",
+                            currency: "VND",
+                          }).format(selectedProduct.price)}
+                        </span>
+                      </h6>
+                    </div>
+                    <div>
+                      Sold: {selectedProduct.total_orders} products
+                    </div>
                   </div>
                   <div style={styles.rateReviewsContainer}>
                     <p style={{ display: "flex", alignItems: "center" }}>
@@ -265,7 +306,7 @@ export default function ManageProducts() {
                           icon={faComment}
                           style={{ marginRight: "5px" }}
                         />
-                        {selectedProduct.countReview} Reviews
+                        {selectedProduct.countReviews} Reviews
                       </span>
                     </p>
                   </div>
@@ -297,6 +338,7 @@ export default function ManageProducts() {
               </p>
               <p
                 style={{
+                  width: "80%",
                   justifyContent: "space-between",
                   display: "flex",
                 }}
@@ -369,9 +411,12 @@ const styles = {
     objectFit: "cover",
     borderRadius: "5px",
   },
-  container: {
+  container: (isBlurred) => ({
     padding: "20px",
-  },
+    filter: isBlurred ? "blur(5px)" : "none",
+    pointerEvents: isBlurred ? "none" : "auto", // Ngăn tương tác khi mờ
+    transition: "filter 0.3s ease", // Hiệu ứng chuyển đổi mượt
+  }),
   table: {
     width: "100%",
     borderCollapse: "collapse",
@@ -402,6 +447,7 @@ const styles = {
     alignItems: "center",
   },
   colorCircle: {
+    border: "1px solid #ccc",
     display: "inline-block",
     width: "40px",
     height: "40px",
@@ -437,12 +483,6 @@ const styles = {
   },
   modalBody: {
     display: "flex",
-  },
-  priceRateContainer: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    width: "300px",
   },
   addBtn: {
     position: "absolute",
@@ -529,5 +569,13 @@ const styles = {
   modalFooter: {
     padding: "15px",
     textAlign: "right",
+  },
+  searchInput: {
+    padding: "8px 8px 8px 30px",
+    width: "45%",
+    borderRadius: "20px",
+    outline: "none",
+    fontSize: "14px",
+    marginTop: "10px",
   },
 };

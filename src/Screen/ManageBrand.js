@@ -29,7 +29,7 @@ const ManageBrand = () => {
       isDelete !== undefined ? { is_delete: isDelete.toString() } : {};
 
     axios
-      .get("https://backenddatn-production.up.railway.app/v1/api/brand/get_all_brands", { params })
+      .get("http://localhost:5000/v1/api/brand/get_all_brands", { params })
       .then((response) => {
         setBrands(response.data.metadata);
       })
@@ -50,10 +50,10 @@ const ManageBrand = () => {
     fetchBrands();
   };
 
-  const handleDeleteBrand = (id) => {
+  const handleDeleteBrand = (_id) => {
     axios
       .delete(
-        `https://backenddatn-production.up.railway.app/v1/api/toggle_delete_brand?_id=${id}`
+        `http://localhost:5000/v1/api/brand/toggle_delete_brand?_id=${_id}`
       )
       .then(() => {
         fetchBrands();
@@ -71,7 +71,7 @@ const ManageBrand = () => {
 
     axios
       .put(
-        `https://backenddatn-production.up.railway.app/v1/api/brand/update_brand?_id=${updatedBrand._id}`,
+        `http://localhost:5000/v1/api/brand/update_brand?_id=${updatedBrand._id}`,
         formData,
         {
           headers: {

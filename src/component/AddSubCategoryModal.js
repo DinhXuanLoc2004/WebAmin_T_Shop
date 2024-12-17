@@ -16,29 +16,30 @@ export default function AddSubCategoryModal({ isOpen, onRequestClose, selectedCa
       setError("Vui lòng chọn danh mục đời 1 trước khi thêm danh mục đời 2.");
       return;
     }
-
+  
     if (!subCategoryName.trim()) {
       setError("Tên danh mục đời 2 không được để trống.");
       return;
     }
-
-    // Tạo form data để gửi ảnh
+  
     const formData = new FormData();
     formData.append("name_category", subCategoryName);
     formData.append("parent_id", selectedCategory._id);
     if (imageFile) formData.append("image", imageFile);
-
-    setLoading(true); // Bắt đầu quá trình tải
-
+  
+    setLoading(true);
+  
     try {
-      const response = await axios.post("https://backenddatn-production.up.railway.app/v1/api/category/add_category", formData, {
+      const response = await axios.post("http://localhost:5000/v1/api/category/add_category", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
-
+  
       if (response.status === 201) {
-        onRequestClose(); // Đóng modal sau khi thêm thành công
+        // Gọi onSubCategoryAdded để cập nhật lại danh sách subCategory
+        onSubCategoryAdded(response.data.metadata); // Giả sử API trả về danh mục con vừa thêm
+        onRequestClose();
         setSubCategoryName("");
         setImageFile(null);
         setError("");
@@ -47,9 +48,10 @@ export default function AddSubCategoryModal({ isOpen, onRequestClose, selectedCa
       console.error("Lỗi khi thêm danh mục đời 2:", error);
       setError("Đã xảy ra lỗi khi thêm danh mục đời 2.");
     } finally {
-      setLoading(false); // Dừng quá trình tải sau khi hoàn thành
+      setLoading(false);
     }
   };
+  
 
   // Hàm xử lý chọn file
   const handleFileChange = (e) => {

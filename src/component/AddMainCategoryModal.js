@@ -23,7 +23,7 @@ export default function AddMainCategoryModal({ isOpen, onRequestClose, onMainCat
     setLoading(true); // Bắt đầu quá trình tải
 
     try {
-      const response = await axios.post("https://backenddatn-production.up.railway.app/v1/api/category/add_category", formData, {
+      const response = await axios.post("http://localhost:5000/v1/api/category/add_category", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },

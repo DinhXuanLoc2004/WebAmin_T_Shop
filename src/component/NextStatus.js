@@ -4,39 +4,31 @@ import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import Modal from "@mui/material/Modal";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
-import { BorderColor } from "@mui/icons-material";
 
-export default function DeleteDialog({ open, onClose, onConfirm }) {
+export default function NextStatus({ open, onClose, onConfirm }) {
   const style = {
     container: {
       position: "absolute",
       top: "50%",
       left: "50%",
       transform: "translate(-50%, -50%)",
-      width: 400,
-      backgroundColor: "#F2F4FC", // Đặt nền trắng cho Box
+      backgroundColor: "#F2F4FC",
       borderRadius: "10px",
       padding: "20px",
       boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.1)",
-      height: "200px",
-      width: "380px",
-      border: "2px solid black",
+      height: "160px",
     },
     title: {
-      size: "25px",
-      fontSize: "25px",
+      size: "18px",
       color: "#0F61AC",
       fontWeight: "bold",
     },
     icon: {
-      size: "20px",
-
-      color: "#0F61AC", 
+      size: "18px",
+      color: "#0F61AC",
     },
     description: {
-      size: "25px",
-      fontSize: "25px",
-
+      size: "16px",
       color: "black",
       marginLeft: "23px",
     },
@@ -57,7 +49,7 @@ export default function DeleteDialog({ open, onClose, onConfirm }) {
           <text style={style.title}>Delete</text>
         </Typography>
         <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-          <text style={style.description}> Do you want to delete it?</text>
+          <text style={style.description}> Do you want to move to the next state?</text>
         </Typography>
         <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
           <Button onClick={onClose}>No</Button>

@@ -127,7 +127,7 @@ export default function ManageUser() {
 }
 
 const styles = {
-  container: { padding: "20px" },
+  container: { padding: "20px"},
   table: { width: "100%", borderCollapse: "collapse", marginTop: "20px" },
   thTd: { padding: "10px", textAlign: "left", borderBottom: "1px solid #ddd" },
   th: { backgroundColor: "#f5f5f5" },

@@ -4,45 +4,6 @@ import { useNavigate } from "react-router-dom";
 import axiosInstance from "../helper/axiosIntercreptor";
 import { faEnvelope, faKey } from "@fortawesome/free-solid-svg-icons";
 import "../Css/Spinner.css";
-
-import { initializeApp } from "firebase/app";
-import { getMessaging, getToken } from "firebase/messaging";
-const firebaseConfig = {
-  apiKey: "AIzaSyAyAXpz90m27RtzQ86tm3TZenmPcGvZyeE",
-  authDomain: "back-end-t-shop.firebaseapp.com",
-  databaseURL: "https://back-end-t-shop-default-rtdb.firebaseio.com",
-  projectId: "back-end-t-shop",
-  storageBucket: "back-end-t-shop.appspot.com",
-  messagingSenderId: "139108154186",
-  appId: "1:139108154186:web:c73ef4350e00b23a721fb3",
-  measurementId: "G-E03GQR5Z2Z",
-};
-
-const app = initializeApp(firebaseConfig);
-export const messaging = getMessaging(app);
-export const generateToken = async (id) => {
-  const permission = await Notification.requestPermission();
-  if (permission === "granted") {
-    const token = await getToken(messaging, {
-      vapidKey:
-        "BEm6eOKiNtv7_RufJJLzUleks9uFa-E1apoJkJFLvfksO7886sd6btxAQhJmo3zn41VmayZRM4nT7c_MkHgOqrI",
-    });
-    console.log('FCM wed nè : ',token)
-    if (token) {
-      try {
-        const response = await axiosInstance.put("admin/set_fcm_admin", {
-          _id: id,
-          fcm: token,
-        });
-        console.log("FCM token đã set vô thành công :", response.data.metadata);
-      } catch (error) {
-        console.error("Lỗi khi gửi FCM token lên server:", error);
-      }
-    }
-  } else {
-    console.log("Permission denied for notifications");
-  }
-};
 export default function LoginScreen({ onLogin }) {
   const [id, setId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);

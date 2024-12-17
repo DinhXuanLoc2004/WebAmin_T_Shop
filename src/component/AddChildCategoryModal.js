@@ -15,32 +15,34 @@ export default function AddChildCategoryModal({ isOpen, onRequestClose, selected
       setError("Vui lòng chọn cả danh mục đời 1 và đời 2 trước khi thêm danh mục con.");
       return;
     }
-
+  
     if (!childCategoryName.trim()) {
       setError("Tên danh mục con không được để trống.");
       return;
     }
-
+  
     const formData = new FormData();
     formData.append("name_category", childCategoryName);
     formData.append("parent_id", selectedSubCategory._id);
     if (imageFile) formData.append("image", imageFile);
-
+  
     setLoading(true); // Bắt đầu loading
-
+  
     try {
-      const response = await axios.post("https://backenddatn-production.up.railway.app/v1/api/category/add_category", formData, {
+      const response = await axios.post("http://localhost:5000/v1/api/category/add_category", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
-
+  
       if (response.status === 201) {
-        // onChildCategoryAdded(response.data.metadata.category);
+        // Cập nhật ngay danh sách danh mục con với dữ liệu mới
+        onChildCategoryAdded(response.data.metadata); // Cập nhật danh mục con mới vào state
+  
         setChildCategoryName("");
         setImageFile(null);
         setError("");
-        onRequestClose();
+        onRequestClose(); // Đóng modal
       }
     } catch (error) {
       console.error("Lỗi khi thêm danh mục con:", error);
@@ -49,6 +51,8 @@ export default function AddChildCategoryModal({ isOpen, onRequestClose, selected
       setLoading(false); // Dừng loading
     }
   };
+  
+  
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
