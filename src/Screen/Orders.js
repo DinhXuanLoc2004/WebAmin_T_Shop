@@ -84,26 +84,21 @@ export default function Orders() {
     Delivering: ["Delivered Successfully"],
   };
 
-  const handleUpdateStatus = async (nextStatus) => {
-    if (!currentOrder) return;
+  const handleUpdateStatus = async (order) => {
+    if (!order) return;
 
-    const { _id: order_id, order_status } = currentOrder;
+    const { order_status } = order;
+    const nextStatus = nextStatusMap[order_status]?.[0];
 
     if (!nextStatus) {
       console.log("No next status available for this order.");
       return;
     }
 
-    // Check if the order status is the last status in the sequence
-    if (!nextStatusMap[order_status]) {
-      console.log("This order is already in the final status.");
-      return;
-    }
-
     try {
       // Open the confirmation dialog
       setOpenDialog(true);
-      setCurrentOrder(currentOrder); // Save current order to be updated after confirmation
+      setCurrentOrder(order); // Set the order to be updated
     } catch (error) {
       console.error("Error updating status order:", error);
     }
@@ -129,7 +124,7 @@ export default function Orders() {
         }
       );
 
-      // Update status in the list of orders
+      // Update the order list state
       setOrders((prevOrders) =>
         prevOrders.map((order) =>
           order._id === order_id
@@ -138,10 +133,11 @@ export default function Orders() {
         )
       );
 
-      // Update currentOrder
-      setCurrentOrder((prev) =>
-        orders.find((order) => order._id === currentOrder._id)
-      );
+      // Update currentOrder to reflect the new status
+      setCurrentOrder((prev) => ({
+        ...prev,
+        order_status: nextStatus,
+      }));
 
       console.log("Status updated successfully!");
     } catch (error) {
@@ -228,9 +224,7 @@ export default function Orders() {
                       "Unpaid",
                     ].includes(order.order_status)}
                     onChange={() => {
-                      const nextStatus = nextStatusMap[order.order_status]?.[0];
-                      setCurrentOrder(order);
-                      handleUpdateStatus(nextStatus);
+                      handleUpdateStatus(order); // Pass current order directly
                     }}
                     onClick={(e) => {
                       e.stopPropagation();

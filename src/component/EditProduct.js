@@ -333,7 +333,7 @@ export default function EditProduct({ productId, onProductUpdated }) {
 
   const handleVariantChange = (index, field, value) => {
     const updatedVariants = [...formData.product_variants];
-    updatedVariants[index][field] = value; // Sử dụng trực tiếp field thay vì name
+    updatedVariants[index][field] = value;
     setFormData({
       ...formData,
       product_variants: updatedVariants,
@@ -355,6 +355,7 @@ export default function EditProduct({ productId, onProductUpdated }) {
           price: "",
           size_id: "",
           image_product_color_id: "",
+          is_delete: "true",
         },
       ],
     });
@@ -654,7 +655,7 @@ export default function EditProduct({ productId, onProductUpdated }) {
                             {variant.name_color}
                           </Form.Label>
                         </Form.Group>
-                        
+
                         <select
                           value={variant.image_product_color_id || ""} // Giá trị hiện tại
                           onChange={(e) => {
@@ -862,8 +863,15 @@ export default function EditProduct({ productId, onProductUpdated }) {
                         label="Mark as Deleted"
                         name="is_delete"
                         checked={variant.is_delete || false}
-                        onChange={(e) => handleVariantChange(index, e)}
+                        onChange={(e) =>
+                          handleVariantChange(
+                            index,
+                            "is_delete",
+                            e.target.checked
+                          )
+                        }
                       />
+
                       <div>
                         {formData.product_variants.length >= 2 && (
                           <hr

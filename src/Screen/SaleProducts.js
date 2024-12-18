@@ -44,6 +44,21 @@ const SalesActive = () => {
       setLoading(false);
     }
   };
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      salesActive.forEach((sale) => {
+        const expiryDate = new Date(sale.time_end);
+        if (sale.is_active && expiryDate <= now) {
+          handleToggleSaleStatus(sale._id);
+        }
+      });
+    }, 60000); // Kiểm tra mỗi 60 giây
+  
+    return () => clearInterval(interval); // Dọn dẹp khi component unmount
+  }, [salesActive]); 
+
   const fetchProducts = async () => {
     try {
       const response = await axios.post(

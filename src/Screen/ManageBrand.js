@@ -221,7 +221,7 @@ const styles = {
   },
   image: {
     width: 250,
-    height: 300,
+    height: 250,
     marginBottom: "10px",
   },
   name: {

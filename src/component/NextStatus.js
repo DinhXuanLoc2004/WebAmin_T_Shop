@@ -46,7 +46,7 @@ export default function NextStatus({ open, onClose, onConfirm }) {
       <Box style={style.container}>
         <Typography id="modal-modal-title" variant="h6" component="h2">
           <CheckCircleOutlineIcon style={style.icon} />
-          <text style={style.title}>Delete</text>
+          <text style={style.title}>Next Status</text>
         </Typography>
         <Typography id="modal-modal-description" sx={{ mt: 2 }}>
           <text style={style.description}> Do you want to move to the next state?</text>

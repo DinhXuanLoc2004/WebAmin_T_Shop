@@ -275,6 +275,21 @@ export default function Vouchers() {
       alert("Failed to fetch sale details. Please try again.");
     }
   };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      vouchers.forEach((voucher) => {
+        const expiryDate = new Date(voucher.time_end);
+        if (voucher.is_active && expiryDate <= now) {
+          handleDelete(voucher._id);
+        }
+      });
+    }, 60000); // Kiểm tra mỗi 60 giây
+  
+    return () => clearInterval(interval); // Dọn dẹp khi component unmount
+  }, [vouchers]);
+  
   return (
     <div style={styles.container}>
       <input
@@ -579,7 +594,7 @@ export default function Vouchers() {
             >
               {users.map((user) => (
                 <option key={user._id} value={user._id}>
-                 {user.email}
+                  {user.email}
                 </option>
               ))}
             </select>
@@ -689,23 +704,24 @@ export default function Vouchers() {
               checked={newVoucher.is_voucher_new_user}
               onChange={handleAddChange}
               style={styles.checkbox}
+              zz
             />
           </label>
           {newVoucher.is_voucher_new_user && (
-  <select
-    name="user"
-    value={newVoucher.user}
-    onChange={handleAddChange}
-    style={styles.input}
-  >
-    <option value="">Select User (If new user only)</option>
-    {users.map((user) => (
-      <option key={user._id} value={user._id}>
-        {user.email} {/* Hiển thị email ở đây */}
-      </option>
-    ))}
-  </select>
-)}
+            <select
+              name="user"
+              value={newVoucher.user}
+              onChange={handleAddChange}
+              style={styles.input}
+            >
+              <option value="">Select User (If new user only)</option>
+              {users.map((user) => (
+                <option key={user._id} value={user._id}>
+                  {user.email} {/* Hiển thị email ở đây */}
+                </option>
+              ))}
+            </select>
+          )}
 
           <label>
             Voucher Type

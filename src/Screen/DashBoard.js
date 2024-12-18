@@ -279,7 +279,7 @@ export default function DashBoard() {
       <div className="mt-5">
         <h3 className="mb-4 text-center">Weekly Statistics</h3>
         <div className="mb-3">
-          <label>Select Week: </label>
+          <label style={{marginRight: "10px"}}>Select Week:</label>
           <select
             value={selectedWeek}
             onChange={(e) =>
@@ -288,6 +288,7 @@ export default function DashBoard() {
                 statistics.selectedMonthWeeks
               )
             }
+            style={{borderRadius: "5px"}}
           >
             {statistics.selectedMonthWeeks.map((w) => (
               <option key={w.week} value={w.week}>
@@ -346,7 +347,7 @@ export default function DashBoard() {
             onClick={handleChartClick}
             margin={{ top: 30, right: 30, left: 30, bottom: 10 }}
           >
-            <XAxis dataKey="month" />
+            <XAxis tickFormatter={(value) => `Tháng ${value}`} dataKey="month" />
             <YAxis />
             <CartesianGrid strokeDasharray="3 3" />
             <Tooltip
