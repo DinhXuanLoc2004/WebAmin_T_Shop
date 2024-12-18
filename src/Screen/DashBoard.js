@@ -5,7 +5,7 @@ import {
   faShoppingCart,
   faMoneyBill,
   faClock,
-  faComment
+  faComment,
 } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 import {
@@ -37,7 +37,7 @@ export default function DashBoard() {
 
   const [chartDataKey, setChartDataKey] = useState("total_orders");
 
-  const dashBoardData = { user: 182, order: 400, sales: 31.109, pending: 48 };
+  const dashBoardData = { pending: 0 };
 
   useEffect(() => {
     fetchDataUser();
@@ -56,7 +56,7 @@ export default function DashBoard() {
 
       setStatistics((prev) => ({ ...prev, monthly: monthly_statistics }));
       setCustomerStatistics(user_email_statistics || []); // Cập nhật danh sách khách hàng
-      handleMonthSelection(1, monthly_statistics); // Chọn tháng đầu tiên mặc định
+      handleMonthSelection(12, monthly_statistics); // Chọn tháng đầu tiên mặc định
     } catch (error) {
       console.error("Error fetching order statistics:", error);
     }
@@ -145,11 +145,20 @@ export default function DashBoard() {
           color="warning"
         />
         <StatCard
-          title="Total Sales"
-          value={dashBoardData.sales}
+          title="Total Revenue"
+          value={new Intl.NumberFormat("vi-VN", {
+            style: "currency",
+            currency: "VND",
+          }).format(
+            statistics.monthly.reduce(
+              (sum, month) => sum + (month.total_revenue || 0),
+              0
+            )
+          )}
           icon={faMoneyBill}
           color="success"
         />
+
         <StatCard
           title="Pending Orders"
           value={dashBoardData.pending}
@@ -227,13 +236,13 @@ export default function DashBoard() {
       <div className="mt-5">
         <h3 className="mb-4 text-center">Monthly Statistics</h3>
         <div className="mb-3">
-          <label style={{marginRight: "10px"}}>Select Month:</label>
+          <label style={{ marginRight: "10px" }}>Select Month:</label>
           <select
             value={selectedMonth}
             onChange={(e) =>
               handleMonthSelection(Number(e.target.value), statistics.monthly)
             }
-            style={{borderRadius: "5px"}}
+            style={{ borderRadius: "5px" }}
           >
             {statistics.monthly.map((m) => (
               <option key={m.month} value={m.month}>
@@ -279,7 +288,7 @@ export default function DashBoard() {
       <div className="mt-5">
         <h3 className="mb-4 text-center">Weekly Statistics</h3>
         <div className="mb-3">
-          <label style={{marginRight: "10px"}}>Select Week:</label>
+          <label style={{ marginRight: "10px" }}>Select Week:</label>
           <select
             value={selectedWeek}
             onChange={(e) =>
@@ -288,7 +297,7 @@ export default function DashBoard() {
                 statistics.selectedMonthWeeks
               )
             }
-            style={{borderRadius: "5px"}}
+            style={{ borderRadius: "5px" }}
           >
             {statistics.selectedMonthWeeks.map((w) => (
               <option key={w.week} value={w.week}>
@@ -347,7 +356,10 @@ export default function DashBoard() {
             onClick={handleChartClick}
             margin={{ top: 30, right: 30, left: 30, bottom: 10 }}
           >
-            <XAxis tickFormatter={(value) => `Tháng ${value}`} dataKey="month" />
+            <XAxis
+              tickFormatter={(value) => `Tháng ${value}`}
+              dataKey="month"
+            />
             <YAxis />
             <CartesianGrid strokeDasharray="3 3" />
             <Tooltip
