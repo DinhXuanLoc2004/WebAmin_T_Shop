@@ -2,99 +2,29 @@ import React, { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faTrash,
-  faEdit,
   faChevronLeft,
   faChevronRight,
   faStar,
   faComment,
-  faPlus,
 } from "@fortawesome/free-solid-svg-icons";
 import Modal from "react-bootstrap/Modal";
 import "../Css/Dialog.css";
+import "../Css/Spinner.css";
 import axios from "axios";
 import ColorAndSize from "../component/ColorAndSize";
 import DeleteDialog from "../component/DeleteDialog";
+import AddProduct from "../component/AddProduct";
+import EditProduct from "../component/EditProduct";
 
 export default function ManageProducts() {
   const [products, setProducts] = useState([]);
+  const [searchItem, setSearchItem] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isAddProductOpen, setIsAddProductOpen] = useState(false);
-  const [newProductData, setNewProductData] = useState({
-    name_product: "",
-    description: "",
-    images: [],
-    category_id: "",
-    brand_id: "",
-    product_variants: [],
-  });
-  const [isEditProductOpen, setIsEditProductOpen] = useState(false);
-  const [editProductData, setEditProductData] = useState({
-    name_product: "",
-    description: "",
-    images: [],
-    category_id: "",
-    brand_id: "",
-    product_variants: [],
-  });
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false); // State to manage delete dialog visibility
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [productIdToDelete, setProductIdToDelete] = useState(null);
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const result = await axios.post(
-          "http://localhost:5000/v1/api/product/get_all_products"
-        );
-        setProducts(result.data.metadata.products);
-      } catch (error) {
-        console.error("Lỗi khi gọi API:", error);
-      }
-    };
-    fetchProducts();
-  }, []);
-
-  const handleProductClick = async (productId) => {
-    if (!productId) return;
-    try {
-      const result = await axios.get(
-        `http://localhost:5000/v1/api/product/get_detail_product?product_id=${productId}`
-      );
-      setSelectedProduct(result.data.metadata);
-      setIsDialogOpen(true);
-    } catch (error) {
-      console.error("Error fetching product details:", error);
-    }
-  };
-
-  const handleCloseDialog = () => {
-    setIsDialogOpen(false);
-    setSelectedProduct(null);
-  };
-
-  const handleDeleteProduct = async (productId) => {
-    try {
-      await axios.delete(
-        `http://localhost:5000/v1/api/product/delete_product?product_id=${productId}`
-      );
-      // Refresh the product list after deletion
-      const result = await axios.post(
-        "http://localhost:5000/v1/api/product/get_all_products"
-      );
-      setProducts(result.data.metadata.products);
-      setIsDeleteDialogOpen(false); // Close the delete dialog
-    } catch (error) {
-      console.error(error);
-      alert("Error deleting product");
-    }
-  };
-
-  const handleDeleteButtonClick = (productId, event) => {
-    event.stopPropagation(); // Prevent row click
-    setProductIdToDelete(productId); // Set the product ID to be deleted
-    setIsDeleteDialogOpen(true); // Show the delete confirmation dialog
-  };
+  const [isLoading, setIsLoading] = useState(false);
 
   const handlePrevClick = () => {
     setCurrentIndex((prevIndex) =>
@@ -116,437 +46,85 @@ export default function ManageProducts() {
     setCurrentIndex(index);
   };
 
-  const openAddProductModal = () => {
-    setIsAddProductOpen(true);
-  };
-
-  const openEditProductModal = (product) => {
-    setEditProductData(product); // Load the product data into the edit form
-    setIsEditProductOpen(true);
-    console.log(product)
-  };
-
-  const closeAddProductModal = () => {
-    setIsAddProductOpen(false);
-    setNewProductData({
-      name_product: "",
-      description: "",
-      images: [],
-      category_id: "",
-      brand_id: "",
-      product_variants: [],
-    });
-  };
-
-  const closeEditProductModal = () => {
-    setIsEditProductOpen(false);
-    setEditProductData({
-      name_product: "",
-      description: "",
-      images: [],
-      category_id: "",
-      brand_id: "",
-      product_variants: [],
-    });
-  };
-
-  const handleAddProduct = async () => {
+  const fetchProducts = async () => {
     try {
-      const formData = new FormData();
-      formData.append("name_product", newProductData.name_product);
-      formData.append("description", newProductData.description);
-      formData.append("category_id", newProductData.category_id);
-      formData.append("brand_id", newProductData.brand_id);
-      formData.append(
-        "product_variants",
-        JSON.stringify(newProductData.product_variants)
-      );
-
-      newProductData.images.forEach((image) => {
-        formData.append("images", image);
-      });
-
-      const response = await axios.post(
-        "http://localhost:5000/v1/api/product/add_product",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-
-      console.log("Product added:", response.data);
-      closeAddProductModal();
-
       const result = await axios.post(
-        "http://localhost:5000/v1/api/product/get_all_products"
+        `http://localhost:5000/v1/api/product/get_all_products?is_delete=${false}`
       );
       setProducts(result.data.metadata.products);
+      console.log(result.data.metadata.products);
     } catch (error) {
-      console.error("Error adding product:", error);
+      console.error("Lỗi khi gọi API:", error);
     }
   };
 
-  const handleEditProduct = async () => {
+  useEffect(() => {
+    fetchProducts();
+    return () => {
+      setProducts([]);
+    };
+  }, []);
+
+  const handleProductClick = async (productId) => {
+    if (!productId) return;
     try {
-      const formData = new FormData();
-      formData.append("name_product", editProductData.name_product);
-      formData.append("description", editProductData.description);
-      formData.append("category_id", editProductData.category_id);
-      formData.append("brand_id", editProductData.brand_id);
-      formData.append(
-        "product_variants",
-        JSON.stringify(editProductData.product_variants)
+      const result = await axios.get(
+        `http://localhost:5000/v1/api/product/get_detail_product?product_id=${productId}`
       );
-
-      editProductData.images.forEach((image) => {
-        formData.append("images", image);
-      });
-
-      await axios.put(
-        `http://localhost:5000/v1/api/product/update_product?product_id=${editProductData._id}`,
-        formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
-
-      const result = await axios.post(
-        "http://localhost:5000/v1/api/product/get_all_products"
-      );
-      setProducts(result.data.metadata.products);
-
-      closeEditProductModal();
+      setSelectedProduct(result.data.metadata);
+      console.log(result.data.metadata);
+      setIsDialogOpen(true);
     } catch (error) {
-      console.error("Error updating product:", error);
+      console.error("Error fetching product details:", error);
     }
   };
 
-  const handleImageUpload = (event) => {
-    setNewProductData({
-      ...newProductData,
-      images: Array.from(event.target.files),
-    });
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    setSelectedProduct(null);
   };
 
-  const handleEditImageUpload = (event) => {
-    setEditProductData({
-      ...editProductData,
-      images: Array.from(event.target.files),
-    });
-  };
-
-  const handleAddVariant = () => {
-    setNewProductData({
-      ...newProductData,
-      product_variants: [
-        ...newProductData.product_variants,
-        { quantity: 0, price: 0, size_id: "", image_product_color_id: "" },
-      ],
-    });
-  };
-
-  const handleEditVariantChange = (index, field, value) => {
-    const updatedVariants = [...editProductData.product_variants];
-    updatedVariants[index][field] =
-      field === "quantity" || field === "price"
-        ? value === "" || value > 0
-          ? value
-          : updatedVariants[index][field]
-        : value;
-    setEditProductData({
-      ...editProductData,
-      product_variants: updatedVariants,
-    });
-  };
-
-  const handleVariantChange = (index, field, value) => {
-    const updatedVariants = [...newProductData.product_variants];
-    if (field === "quantity" || field === "price") {
-      value = value === "" || value > 0 ? value : updatedVariants[index][field];
+  const handleDeleteProduct = async (productId) => {
+    try {
+      await axios.delete(
+        `http://localhost:5000/v1/api/product/toggle_delete_product?_id=${productId}`
+      );
+      fetchProducts();
+      setIsDeleteDialogOpen(false);
+    } catch (error) {
+      console.error(error);
     }
-    updatedVariants[index][field] = value;
-    setNewProductData({
-      ...newProductData,
-      product_variants: updatedVariants,
-    });
   };
+
+  const handleDeleteButtonClick = (productId, event) => {
+    event.stopPropagation();
+    setProductIdToDelete(productId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const filteredItems = products.filter((product) =>
+    product.name_product.toLowerCase().includes(searchItem.toLowerCase())
+  );
 
   return (
-    <div style={styles.container}>
+    <div style={styles.container(isDeleteDialogOpen)}>
       <ColorAndSize />
 
-      <button style={styles.addBtn} onClick={openAddProductModal}>
-        <FontAwesomeIcon icon={faPlus} style={{ marginRight: "5px" }} /> Add
-        Product
-      </button>
+      <input
+        type="text"
+        placeholder="Search by name product"
+        value={searchItem}
+        onChange={(e) => setSearchItem(e.target.value)}
+        style={styles.searchInput}
+      />
+
+      <AddProduct onProductAdded={fetchProducts} />
 
       <DeleteDialog
         open={isDeleteDialogOpen}
-        onClose={() => setIsDeleteDialogOpen(false)} // Close the dialog without deleting
-        onConfirm={() => handleDeleteProduct(productIdToDelete)} // Confirm deletion
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onConfirm={() => handleDeleteProduct(productIdToDelete)}
       />
-
-      <Modal show={isAddProductOpen} onHide={closeAddProductModal} centered>
-        <Modal.Header closeButton style={styles.modalHeader}>
-          <Modal.Title style={styles.modalTitle}>Add New Product</Modal.Title>
-        </Modal.Header>
-        <Modal.Body style={styles.modalBody1}>
-          <form>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Product Name:</label>
-              <input
-                type="text"
-                value={newProductData.name_product}
-                onChange={(e) =>
-                  setNewProductData({
-                    ...newProductData,
-                    name_product: e.target.value,
-                  })
-                }
-                style={styles.input}
-              />
-            </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Description:</label>
-              <textarea
-                value={newProductData.description}
-                onChange={(e) =>
-                  setNewProductData({
-                    ...newProductData,
-                    description: e.target.value,
-                  })
-                }
-                style={styles.textarea}
-              ></textarea>
-            </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Category ID:</label>
-              <input
-                type="text"
-                value={newProductData.category_id}
-                onChange={(e) =>
-                  setNewProductData({
-                    ...newProductData,
-                    category_id: e.target.value,
-                  })
-                }
-                style={styles.input}
-              />
-            </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Brand ID:</label>
-              <input
-                type="text"
-                value={newProductData.brand_id}
-                onChange={(e) =>
-                  setNewProductData({
-                    ...newProductData,
-                    brand_id: e.target.value,
-                  })
-                }
-                style={styles.input}
-              />
-            </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Images:</label>
-              <input
-                type="file"
-                multiple
-                onChange={handleImageUpload}
-                style={styles.inputFile}
-              />
-            </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Product Variants:</label>
-              <div style={styles.variantContainer}>
-                {newProductData.product_variants.map((variant, index) => (
-                  <div key={index} style={{ marginBottom: "10px" }}>
-                    <input
-                      type="number"
-                      placeholder="Enter quantity"
-                      value={variant.quantity}
-                      onChange={(e) =>
-                        handleVariantChange(index, "quantity", e.target.value)
-                      }
-                      style={styles.input}
-                      min="1" // Ensure only positive numbers
-                    />
-                    <input
-                      type="number"
-                      placeholder="Enter price"
-                      value={variant.price}
-                      onChange={(e) =>
-                        handleVariantChange(index, "price", e.target.value)
-                      }
-                      style={styles.input}
-                      min="0.01" // Ensure only positive numbers, with a minimum of 0.01
-                    />
-                    <input
-                      type="text"
-                      placeholder="Size ID"
-                      value={variant.size_id}
-                      onChange={(e) =>
-                        handleVariantChange(index, "size_id", e.target.value)
-                      }
-                      style={styles.input}
-                    />
-                    <input
-                      type="text"
-                      placeholder="Image Color ID"
-                      value={variant.image_product_color_id}
-                      onChange={(e) =>
-                        handleVariantChange(
-                          index,
-                          "image_product_color_id",
-                          e.target.value
-                        )
-                      }
-                      style={styles.input}
-                    />
-                    <div>
-                      {newProductData.product_variants.length >= 2 && (
-                        <hr
-                          style={{ margin: "20px 0", border: "1px solid #ccc" }}
-                        />
-                      )}
-                    </div>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={handleAddVariant}
-                  style={styles.buttonAddVariant}
-                >
-                  Add Variant
-                </button>
-              </div>
-            </div>
-          </form>
-        </Modal.Body>
-        <Modal.Footer style={styles.modalFooter}>
-          <button onClick={handleAddProduct} style={styles.button}>
-            Save
-          </button>
-          <button
-            onClick={closeAddProductModal}
-            style={{ ...styles.button, ...styles.buttonCancel }}
-          >
-            Cancel
-          </button>
-        </Modal.Footer>
-      </Modal>
-
-      <Modal show={isEditProductOpen} onHide={closeEditProductModal} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Edit Product</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <form>
-            <div>
-              <label>Product Name:</label>
-              <input
-                type="text"
-                value={editProductData.name_product}
-                onChange={(e) =>
-                  setEditProductData({
-                    ...editProductData,
-                    name_product: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label>Description:</label>
-              <textarea
-                value={editProductData.description}
-                onChange={(e) =>
-                  setEditProductData({
-                    ...editProductData,
-                    description: e.target.value,
-                  })
-                }
-              ></textarea>
-            </div>
-            <div>
-              <label>Category ID:</label>
-              <input
-                type="text"
-                value={editProductData.category_id}
-                onChange={(e) =>
-                  setEditProductData({
-                    ...editProductData,
-                    category_id: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label>Brand ID:</label>
-              <input
-                type="text"
-                value={editProductData.brand_id}
-                onChange={(e) =>
-                  setEditProductData({
-                    ...editProductData,
-                    brand_id: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label>Images:</label>
-              <input type="file" multiple onChange={handleEditImageUpload} />
-            </div>
-            {/* <div>
-              <label>Product Variants:</label>
-              {editProductData.product_variants.map((variant, index) => (
-                <div key={index}>
-                  <input
-                    type="number"
-                    placeholder="Quantity"
-                    value={variant.quantity}
-                    onChange={(e) =>
-                      handleEditVariantChange(index, "quantity", e.target.value)
-                    }
-                  />
-                  <input
-                    type="number"
-                    placeholder="Price"
-                    value={variant.price}
-                    onChange={(e) =>
-                      handleEditVariantChange(index, "price", e.target.value)
-                    }
-                  />
-                  <input
-                    type="text"
-                    placeholder="Size ID"
-                    value={variant.size_id}
-                    onChange={(e) =>
-                      handleEditVariantChange(index, "size_id", e.target.value)
-                    }
-                  />
-                  <input
-                    type="text"
-                    placeholder="Image Color ID"
-                    value={variant.image_product_color_id}
-                    onChange={(e) =>
-                      handleEditVariantChange(
-                        index,
-                        "image_product_color_id",
-                        e.target.value
-                      )
-                    }
-                  />
-                </div>
-              ))}
-            </div> */}
-          </form>
-        </Modal.Body>
-        <Modal.Footer>
-          <button onClick={handleEditProduct}>Save</button>
-          <button onClick={closeEditProductModal}>Cancel</button>
-        </Modal.Footer>
-      </Modal>
 
       <table style={styles.table}>
         <thead>
@@ -559,21 +137,21 @@ export default function ManageProducts() {
             <th style={styles.thTd}>Rate</th>
             <th style={styles.thTd}>Quantity</th>
             <th style={styles.thTd}>Price</th>
-            <th style={styles.thTd}>Sold</th>
-            <th style={styles.thTd}></th>
-            <th style={styles.thTd}></th>
+            <th style={styles.thTd}>Discount</th>
+            <th style={styles.thTd}>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {products.map((product, index) => (
-            <tr
-              key={index}
-              style={{ cursor: "pointer" }}
-              onClick={() => handleProductClick(product._id)}
-            >
+          {filteredItems.map((product, index) => (
+            <tr key={index} style={{ cursor: "pointer" }}>
               <td style={styles.thTdTable}>{index + 1}</td>
               <td style={styles.thTd}>
-                <img src={product.thumb} alt="Product" style={styles.img} />
+                <img
+                  src={product.thumb}
+                  alt="Product"
+                  style={styles.img}
+                  onClick={() => handleProductClick(product._id)} // Mở modal khi nhấn vào ảnh
+                />
               </td>
               <td style={styles.thTdTable}>{product.name_product}</td>
               <td style={styles.thTdTable}>{product.name_brand}</td>
@@ -588,20 +166,20 @@ export default function ManageProducts() {
                 </span>
               </td>
               <td style={styles.thTdTable}>{product.inventory_quantity}</td>
-              <td style={styles.thTdTable}>${product.price_min}</td>
-              <td style={styles.thTdTable}>{product.sold} items</td>
-              <td style={styles.thTd}>
-                <button
-                  style={styles.editBtn}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openEditProductModal(product);
-                  }}
-                >
-                  <FontAwesomeIcon icon={faEdit} /> Edit
-                </button>
+              <td style={styles.thTdTable}>
+                {new Intl.NumberFormat("vi-VN", {
+                  style: "currency",
+                  currency: "VND",
+                }).format(product.price_min)}
               </td>
-              <td style={{ borderBottom: "1px solid #ddd" }}>
+              <td style={styles.thTdTable}>{product.discount}%</td>
+              <td style={styles.thTd}>
+                <button style={{ border: "none", background: "white" }}>
+                  <EditProduct
+                    productId={product._id}
+                    onProductUpdated={fetchProducts}
+                  />
+                </button>
                 <button
                   style={styles.deleteBtn}
                   onClick={(e) => handleDeleteButtonClick(product._id, e)}
@@ -624,25 +202,21 @@ export default function ManageProducts() {
         >
           <Modal.Body style={styles.modalBody}>
             <div style={styles.galleryContainer}>
-              {/* Main Image */}
               <div>
                 {selectedProduct && selectedProduct.images_product && (
                   <img
-                    src={selectedProduct.images_product[currentIndex].url} // Access url from images_product array
+                    src={selectedProduct.images_product[currentIndex].url}
                     alt="Main"
                     style={styles.mainImage}
                   />
                 )}
               </div>
 
-              {/* Navigation Arrows and Thumbnails */}
               <div style={styles.arrowThumbnailContainer}>
-                {/* Left Arrow */}
                 <button onClick={handlePrevClick} style={styles.arrowButton}>
                   <FontAwesomeIcon icon={faChevronLeft} />
                 </button>
 
-                {/* Thumbnails */}
                 <div style={styles.thumbnailContainer}>
                   {selectedProduct.images_product.map((image, index) => (
                     <div
@@ -664,7 +238,6 @@ export default function ManageProducts() {
                   ))}
                 </div>
 
-                {/* Right Arrow */}
                 <button onClick={handleNextClick} style={styles.arrowButton}>
                   <FontAwesomeIcon icon={faChevronRight} />
                 </button>
@@ -674,21 +247,36 @@ export default function ManageProducts() {
             <div style={styles.productInfo}>
               <div>
                 <h1>{selectedProduct.name_product}</h1>
-                <div style={styles.priceRateContainer}>
-                  <div style={styles.priceContainer}>
-                    <h4 style={{ fontWeight: "bold" }}>
-                      ${selectedProduct.price}
-                    </h4>
-                    <h6>
-                      <span
-                        style={{
-                          textDecoration: "line-through",
-                          color: "gray",
-                        }}
-                      >
-                        ${selectedProduct.price}
-                      </span>
-                    </h6>
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex" }}>
+                      <h4 style={{ fontWeight: "bold" }}>
+                        {new Intl.NumberFormat("vi-VN", {
+                          style: "currency",
+                          currency: "VND",
+                        }).format(
+                          selectedProduct.price -
+                            selectedProduct.price *
+                              (selectedProduct.discount / 100)
+                        )}
+                      </h4>
+                      <h6 style={{ marginLeft: "10px" }}>
+                        <span
+                          style={{
+                            textDecoration: "line-through",
+                            color: "gray",
+                          }}
+                        >
+                          {new Intl.NumberFormat("vi-VN", {
+                            style: "currency",
+                            currency: "VND",
+                          }).format(selectedProduct.price)}
+                        </span>
+                      </h6>
+                    </div>
+                    <div>
+                      Sold: {selectedProduct.total_orders} products
+                    </div>
                   </div>
                   <div style={styles.rateReviewsContainer}>
                     <p style={{ display: "flex", alignItems: "center" }}>
@@ -717,7 +305,7 @@ export default function ManageProducts() {
                           icon={faComment}
                           style={{ marginRight: "5px" }}
                         />
-                        {selectedProduct.countReview} Reviews
+                        {selectedProduct.countReviews} Reviews
                       </span>
                     </p>
                   </div>
@@ -749,6 +337,7 @@ export default function ManageProducts() {
               </p>
               <p
                 style={{
+                  width: "80%",
                   justifyContent: "space-between",
                   display: "flex",
                 }}
@@ -821,9 +410,12 @@ const styles = {
     objectFit: "cover",
     borderRadius: "5px",
   },
-  container: {
+  container: (isBlurred) => ({
     padding: "20px",
-  },
+    filter: isBlurred ? "blur(5px)" : "none",
+    pointerEvents: isBlurred ? "none" : "auto", // Ngăn tương tác khi mờ
+    transition: "filter 0.3s ease", // Hiệu ứng chuyển đổi mượt
+  }),
   table: {
     width: "100%",
     borderCollapse: "collapse",
@@ -854,6 +446,7 @@ const styles = {
     alignItems: "center",
   },
   colorCircle: {
+    border: "1px solid #ccc",
     display: "inline-block",
     width: "40px",
     height: "40px",
@@ -879,7 +472,8 @@ const styles = {
     borderRadius: "5px",
   },
   editBtn: {
-    backgroundColor: "blue",
+    marginRight: "10px",
+    backgroundColor: "#007bff",
     color: "white",
     border: "none",
     padding: "5px 10px",
@@ -888,12 +482,6 @@ const styles = {
   },
   modalBody: {
     display: "flex",
-  },
-  priceRateContainer: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    width: "300px",
   },
   addBtn: {
     position: "absolute",
@@ -980,5 +568,13 @@ const styles = {
   modalFooter: {
     padding: "15px",
     textAlign: "right",
+  },
+  searchInput: {
+    padding: "8px 8px 8px 30px",
+    width: "45%",
+    borderRadius: "20px",
+    outline: "none",
+    fontSize: "14px",
+    marginTop: "10px",
   },
 };

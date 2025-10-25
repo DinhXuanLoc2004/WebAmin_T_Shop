@@ -7,29 +7,32 @@ import {
   faShirt,
   faShoppingCart,
   faThList,
-  faGear,
+  faRecycle,
+  faTicket,
+  faTag,
 } from "@fortawesome/free-solid-svg-icons";
 import DashBoard from "../Screen/DashBoard";
 import ManageProducts from "../Screen/ManageProducts";
 import ManageUser from "../Screen/ManageUser";
 import Orders from "../Screen/Orders";
-import Setting from "../Screen/Setting";
 import ManageCategory from "../Screen/ManageCategory";
-import EditProduct from "../Screen/EditProduct";
-
-// Component Brand
-const Brand = () => <h2 style={styles.heading}>Brand</h2>;
+import ManageBrand from "../Screen/ManageBrand";
+import RecycleBin from "../Screen/RecycleBin";
+import SaleProducts from "../Screen/SaleProducts";
+import Vouchers from "../Screen/Vouchers";
+import Tshop from "../assets/images/Tshop.webp"
 
 export default function Navigation() {
   const [selected, setSelected] = useState("");
-
   const handleSelect = (item) => {
     setSelected(item);
   };
-
   return (
     <div style={styles.container}>
       <nav style={styles.nav}>
+      <div style={styles.logoContainer}>
+    <img src={Tshop} alt="Tshop" style={styles.logo} />
+  </div>
         <ul style={styles.list}>
           <li
             style={{
@@ -151,6 +154,7 @@ export default function Navigation() {
               Brand
             </Link>
           </li>
+
           <li
             style={{
               ...styles.listItem,
@@ -175,28 +179,77 @@ export default function Navigation() {
               User
             </Link>
           </li>
+          
           <li
             style={{
               ...styles.listItem,
-              ...(selected === "setting" && styles.selectedItem),
+              ...(selected === "recycle" && styles.selectedItem),
             }}
           >
             <Link
               style={{
                 ...styles.link,
-                color: selected === "setting" ? "red" : "gray",
+                color: selected === "recycle" ? "red" : "gray",
               }}
-              to="/setting"
-              onClick={() => handleSelect("setting")}
+              to="/recycle"
+              onClick={() => handleSelect("recycle")}
             >
               <FontAwesomeIcon
-                icon={faGear}
+                icon={faRecycle}
                 style={{
                   ...styles.icon,
-                  color: selected === "setting" ? "red" : "gray",
+                  color: selected === "recycle" ? "red" : "gray",
                 }}
               />
-              Setting
+              Recycle Bin
+            </Link>
+          </li>
+          <li
+            style={{
+              ...styles.listItem,
+              ...(selected === "sale" && styles.selectedItem),
+            }}
+          >
+            <Link
+              style={{
+                ...styles.link,
+                color: selected === "sale" ? "red" : "gray",
+              }}
+              to="/sale"
+              onClick={() => handleSelect("sale")}
+            >
+              <FontAwesomeIcon
+                icon={faTag}
+                style={{
+                  ...styles.icon,
+                  color: selected === "sale" ? "red" : "gray",
+                }}
+              />
+              Sale Product
+            </Link>
+          </li>
+          <li
+            style={{
+              ...styles.listItem,
+              ...(selected === "voucher" && styles.selectedItem),
+            }}
+          >
+            <Link
+              style={{
+                ...styles.link,
+                color: selected === "voucher" ? "red" : "gray",
+              }}
+              to="/voucher"
+              onClick={() => handleSelect("voucher")}
+            >
+              <FontAwesomeIcon
+                icon={faTicket}
+                style={{
+                  ...styles.icon,
+                  color: selected === "voucher" ? "red" : "gray",
+                }}
+              />
+              Vouchers
             </Link>
           </li>
         </ul>
@@ -207,10 +260,11 @@ export default function Navigation() {
           <Route path="/order" element={<Orders />} />
           <Route path="/products" element={<ManageProducts />} />
           <Route path="/category" element={<ManageCategory />} />
-          <Route path="/brand" element={<Brand />} />
+          <Route path="/brand" element={<ManageBrand />} />
           <Route path="/user" element={<ManageUser />} />
-          <Route path="/setting" element={<Setting />} />
-          <Route path="/edit" element={<EditProduct />} />
+          <Route path="/recycle" element={<RecycleBin />} />
+          <Route path="/sale" element={<SaleProducts />} />
+          <Route path="/voucher" element={<Vouchers />} />
         </Routes>
       </div>
     </div>
@@ -225,13 +279,17 @@ const styles = {
     flexDirection: "row",
     width: "100vw",
     height: "100vh",
-  },
-  heading: {
-    color: "red",
-    fontSize: 24,
+    position: "relative", // Make the container relative for positioning the sidebar
   },
   nav: {
-    marginRight: 60,
+    position: "fixed", // Make the navigation fixed
+    top: 0,
+    left: 0,
+    width: "250px", // Set the width for the sidebar
+    height: "100vh", // Make the sidebar take the full height
+    padding: "20px", // Padding for the sidebar contents
+    marginRight: 20,
+    backgroundColor: "#f4f4f4", // Sidebar background color
   },
   list: {
     listStyleType: "none",
@@ -260,6 +318,23 @@ const styles = {
     marginRight: 10,
   },
   content: {
-    flex: 1, 
+    marginLeft: "230px", // Add a left margin to avoid overlap with the fixed sidebar
+    padding: "20px", // Add padding for content
+    height: "100vh",
+    width: "100%",
+    overflowY: "auto", // Allow scrolling in content area
   },
+  logoContainer: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: "20px", // Thêm khoảng cách dưới logo
+  },
+  logo: {
+    width: "100px", // Kích thước logo
+    height: "auto",
+    borderRadius: "10px"
+  },
+  
 };
+
